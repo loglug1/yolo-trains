@@ -9,11 +9,16 @@ Description: Provides a constrict class outline for all models to have for inter
 '''
 
 from abc import ABC, abstractmethod
+import base64
 import json
 
 class ObjectDetectionModel :
   @abstractmethod
   def set_model_path(self, url) :
     pass
-  def get_bounding_boxes(self, frame) :
+  def predict_objects_in(self, base64_image: base64) :
+    pass
+  def get_base64_prediction(self) -> base64 :
+    pass
+  def get_boxes_json(self) -> json :
     pass

@@ -8,16 +8,16 @@ Description: Uses the abc_model class requirements to implement the yolo version
 
 '''
 
-from abc_model import ObjectDetectionModel
+from ai_modules.abc_model import ObjectDetectionModel
 import cv2
 from ultralytics import YOLO
 
 class Yolo11s(ObjectDetectionModel) :
+  def __init__(self) :
+    self.results = None
   def set_model_path(self, url) :
     self.model = YOLO(url)
-  def get_bounding_boxes(self, frame) :
-    image = cv2.imread(frame)
-
+  def predict_objects_in(self, image) :
     width = 800
     (h, w) = image.shape[:2]
     ratio = width / float(w)
@@ -25,12 +25,7 @@ class Yolo11s(ObjectDetectionModel) :
     new_height = int(h * ratio)
     resize_img = cv2.resize(image, (new_width, new_height))
 
+    self.results = self.model(resize_img)
     
-    results = self.model(resize_img)
-    img_with_boxes = results[0].plot()
-
-    cv2.imshow("YOLOv11s Detection", img_with_boxes)
-    cv2.waitKey(0) 
-    cv2.destroyAllWindows() 
-
-
+  def get_image(self):
+    return self.results[0].plot()
