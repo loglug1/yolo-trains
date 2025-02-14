@@ -29,7 +29,6 @@ class Yolo11s(ObjectDetectionModel) :
     results = self.model(resize_img)
     img_with_boxes = results[0].plot()
 
-
     cv2.imshow("YOLOv11s Detection", img_with_boxes)
     cv2.waitKey(0) 
     cv2.destroyAllWindows() 
