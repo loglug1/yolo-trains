@@ -18,14 +18,14 @@ class Yolo11s(ObjectDetectionModel) :
   def set_model_path(self, url) :
     self.model = YOLO(url)
   def predict_objects_in(self, image) :
-    width = 800
-    (h, w) = image.shape[:2]
-    ratio = width / float(w)
-    new_width = width
-    new_height = int(h * ratio)
-    resize_img = cv2.resize(image, (new_width, new_height))
+    self.results = self.model(image)
 
-    self.results = self.model(resize_img)
+    speed_dict = self.results[0].speed
+    speed = 0.0
+    for key, value in speed_dict.items():
+      speed += value
+
+    return speed
     
   def get_image(self):
     return self.results[0].plot()

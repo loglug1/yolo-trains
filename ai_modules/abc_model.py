@@ -11,12 +11,15 @@ Description: Provides a constrict class outline for all models to have for inter
 from abc import ABC, abstractmethod
 import base64
 import json
+import numpy as np
 
 class ObjectDetectionModel :
   @abstractmethod
   def set_model_path(self, url) :
     pass
-  def predict_objects_in(self, base64_image: base64) :
+  def predict_objects_in(self, image: np.ndarray) -> float :
+    pass
+  def get_image(self) -> np.ndarray :
     pass
   def get_base64_prediction(self) -> base64 :
     pass
