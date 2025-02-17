@@ -44,10 +44,10 @@ def main():
             break
 
         # resize the frame
-        resize_img = cv2.resize(frame, (new_width, new_height))
+        resized_frame = cv2.resize(frame, (new_width, new_height))
 
         # generate bounding boxes on image
-        processing_time = yolo.predict_objects_in(frame)
+        processing_time = yolo.predict_objects_in(resized_frame)
         processed_frame = yolo.get_image()
 
 
