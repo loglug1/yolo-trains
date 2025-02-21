@@ -9,23 +9,30 @@ Description: Uses the abc_model class requirements to implement the yolo version
 '''
 
 from ai_modules.abc_model import ObjectDetectionModel
-import cv2
 from ultralytics import YOLO
+import numpy as np
 
 class Yolo11s(ObjectDetectionModel) :
-  def __init__(self) :
-    self.results = None
-  def set_model_path(self, url) :
-    self.model = YOLO(url)
-  def predict_objects_in(self, image) :
-    self.results = self.model(image)
 
-    speed_dict = self.results[0].speed
+  def __init__(self, model_path = "ai_modules/ob_detect_models/yolo11s.pt") :
+    self.model = YOLO(model_path)
+    self.results = None
+
+  def set_model_path(self, url) :
+    print("This function is depricated. Pass model into initializer instead.")
+    self.model = YOLO(url)
+
+  def predict_objects_in(self, image: np.ndarray) -> float :
+    generator = self.model.predict(image, verbose=False, stream=True)
+    self.result = next(generator)
+    speed_dict = self.result.speed
     speed = 0.0
     for key, value in speed_dict.items():
       speed += value
-
     return speed
     
-  def get_image(self):
-    return self.results[0].plot()
+  def get_image(self) -> np.ndarray :
+    return self.result.plot()
+  
+  def get_boxes_json(self) -> str :
+    return self.result.to_json()

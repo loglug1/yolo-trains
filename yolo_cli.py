@@ -1,6 +1,7 @@
 from ai_modules.yolo11s import Yolo11s
 import argparse
 import cv2
+import atexit
 
 def main():
     arg_parser = argparse.ArgumentParser()
@@ -35,8 +36,7 @@ def main():
         if out.isOpened() == False:
             raise Exception("Error writing to output file!")
     
-    yolo = Yolo11s()
-    yolo.set_model_path("ai_modules/ob_detect_models/yolo11s.pt")
+    yolo = Yolo11s("ai_modules/ob_detect_models/yolo11s.pt")
 
     while(cap.isOpened()):
         ret, frame = cap.read()
@@ -55,10 +55,13 @@ def main():
             # display frame to live video feed of processed video
             cv2.imshow("YOLO Video Feed", processed_frame)
             # jump forward in video to simulate "real time" (actually is faster than real time)
-            #cap.set(cv2.CAP_PROP_POS_FRAMES, cap.get(cv2.CAP_PROP_POS_FRAMES) + int(processing_time * fpms))
+            cap.set(cv2.CAP_PROP_POS_FRAMES, cap.get(cv2.CAP_PROP_POS_FRAMES) + int(processing_time * fpms))
         else:
             out.write(processed_frame)
         cv2.waitKey(1)
+
+        print("OBJECTS IN FRAME:")
+        print(yolo.get_boxes_json())
 
     cap.release()
     if args.file_out != None:

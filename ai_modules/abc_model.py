@@ -15,13 +15,14 @@ import numpy as np
 
 class ObjectDetectionModel :
   @abstractmethod
-  def set_model_path(self, url) :
-    pass
+  # predict objects in image and return processing time
   def predict_objects_in(self, image: np.ndarray) -> float :
     pass
+  # return previously predicted image
+  @abstractmethod
   def get_image(self) -> np.ndarray :
     pass
-  def get_base64_prediction(self) -> base64 :
-    pass
-  def get_boxes_json(self) -> json :
+  # return JSON of objects detected in image with probabilities and locations
+  @abstractmethod
+  def get_boxes_json(self) -> str :
     pass
