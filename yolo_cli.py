@@ -1,7 +1,6 @@
 from ai_modules.yolo11s import Yolo11s
 import argparse
 import cv2
-import atexit
 
 def main():
     arg_parser = argparse.ArgumentParser()
