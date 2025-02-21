@@ -9,6 +9,7 @@ def main():
     arg_parser.add_argument("--out", "-o", dest="file_out", default=None, type=str, help="Name to save processed video as without extension.", required=False)
     args = arg_parser.parse_args()
 
+    # open input video either from camera or file
     if args.file_in == "camera":
         cap = cv2.VideoCapture(0)
     else:
@@ -17,7 +18,7 @@ def main():
         cap.release()
         raise Exception("Error opening input file!")
     
-    # find scaled down dimensions for video
+    # calculate smaller resolution while keeping aspect ratio
     width = 800
     h = cap.get(cv2.CAP_PROP_FRAME_HEIGHT)
     w = cap.get(cv2.CAP_PROP_FRAME_WIDTH)
@@ -25,13 +26,12 @@ def main():
     new_width = width
     new_height = int(h * ratio)
     
-    # get frame information for frame skipping when processing
+    # get fps metadata for calculating frame skipping when processing
     fps = cap.get(cv2.CAP_PROP_FPS)
     fpms = fps / 1000
 
     # if an output filename is specified, save to file instead of displaying
     if args.file_out != None:
-        #out = cv2.VideoWriter(args.file_out + ".mp4", cv2.VideoWriter_fourcc(*'mp4v'), cap.get(cv2.CAP_PROP_FPS), (int(cap.get(cv2.CAP_PROP_FRAME_WIDTH)), int(cap.get(cv2.CAP_PROP_FRAME_HEIGHT))))
         out = cv2.VideoWriter(args.file_out + ".mp4", cv2.VideoWriter_fourcc(*'mp4v'), fps, (new_width, new_height))
         if out.isOpened() == False:
             raise Exception("Error writing to output file!")
