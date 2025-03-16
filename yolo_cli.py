@@ -59,7 +59,8 @@ def main():
             out.write(processed_frame)
         cv2.waitKey(1)
 
-        print("OBJECTS IN FRAME:")
+        frame_num = cap.get(cv2.CAP_PROP_POS_FRAMES)
+        print(f'OBJECTS IN FRAME #{frame_num}:')
         print(yolo.get_boxes_json())
 
     cap.release()
