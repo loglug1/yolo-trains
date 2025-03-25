@@ -7,4 +7,4 @@ class Base64_Transcoder():
         return np.frombuffer(base64.decode(str), dtype=np.unint8)
     @staticmethod
     def nparray_to_base64(nparr_image: np.ndarray) -> str :
-        return 
+        return base64.encode()

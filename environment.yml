@@ -1,6 +1,7 @@
 name: trains
 channels:
   - defaults
+  - conda-forge
 dependencies:
   - _libgcc_mutex=0.1
   - _openmp_mutex=5.1
@@ -83,3 +84,4 @@ dependencies:
       - ultralytics==8.3.75
       - ultralytics-thop==2.0.14
       - urllib3==2.3.0
+      - waitress==3.0.2
