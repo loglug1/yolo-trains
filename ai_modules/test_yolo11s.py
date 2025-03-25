@@ -3,7 +3,7 @@ import cv2
 
 def main() :
   yolo = Yolo11s()
-  image = cv2.imread("test_images/big.PNG")
+  image = cv2.imread("test_images/train.webp")
   yolo.set_model_path("ob_detect_models/yolo11s.pt")
   yolo.predict_objects_in(image)
   image_with_boxes = yolo.get_image()
