@@ -10,41 +10,50 @@
 <body>
     <sript src="videoHandler.js"></sript>
     <div class="content-wrapper">
-        <div class="video-wrapper">
-            <!-- <video id="video" width="640" height="360" controls>
-                <source src="/test_videos/train-sim-test-1.mkv" type="video/mkv">
-                Your browser does not support the video tag.
-            </video> -->
-        </div>
         <input type="file" id="videoInput" accept="video/*">
-        <video id="videoPreview" width="640" height="360" controls></video>
         <canvas id="canvas" width="640" height="360" style="display:none;"></canvas>
-        <img id="frame" />
+        <div class="video-wrapper">
+            <video id="videoPreview" width="640" height="360" controls></video>
+            <img id="frame" />
+        </div>
+<!-- document.getElementById("videoInput").addEventListener("change", function(event) -->
         <script>
             document.getElementById("videoInput").addEventListener("change", function(event) {
+
                 const file = event.target.files[0];
                 if (file) {
                     const videoURL = URL.createObjectURL(file);
-                    const video = document.createElement("video"); // Create a hidden video element
+                    const video = document.getElementById("videoPreview"); // Create a hidden video element
                     video.src = videoURL;
-                    video.muted = true; // Mute to allow autoplay
-                    video.play();
+                    video.playbackRate = 1.0;
 
-                    video.onloadeddata = function () {
+
+
+                    document.getElementById("videoPreview").addEventListener("play",function(){
                         const canvas = document.getElementById("canvas");
                         const ctx = canvas.getContext("2d");
 
-                        video.currentTime = 1; // Capture at 1s (adjust as needed)
+                        // Set canvas size to match video resolution
+                        canvas.width = 640;
+                        canvas.height = 360;
 
-                        video.onseeked = function () {
-                            ctx.drawImage(video, 0, 0, canvas.width, canvas.height); // Draw frame to canvas
-                            const base64Image = canvas.toDataURL("image/png"); // or "image/jpeg"
+                        // Capture frames at a steady rate (adjust FPS as needed)
+                        const fps = 30; 
+                        const interval = 1000 / fps;
+                        const drawFrame = setInterval(() => {
+                            if (!video.paused && !video.ended) {
+                                ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
 
-                            console.log(base64Image); // Logs the Base64 string
-                            document.getElementById("frame").src = base64Image; // Display captured frame
-                            URL.revokeObjectURL(videoURL); // Clean up
-                        };
-                    };
+                                // Convert to Base64 and display in <img>
+                                const base64Image = canvas.toDataURL("image/png");
+                                console.log(base64Image); // Logs the Base64 string
+                                document.getElementById("frame").src = base64Image;
+                            } else {
+                                clearInterval(drawFrame);
+                                URL.revokeObjectURL(videoURL);
+                            }
+                        }, interval);
+                    });
                 }
             });
         </script>
