@@ -6,7 +6,7 @@ from utilities.base64_transcoder import Base64_Transcoder
 # Defines this file for flask as the WSGI app
 app = Flask(__name__)
 
-socketio = SocketIO(app, cors_allowed_origins="https://piehost.com")
+socketio = SocketIO(app, cors_allowed_origins="https://piehost.com", max_http_buffer_size=10*1000000)
 
 yolo = Yolo11s()
 
@@ -30,7 +30,7 @@ def predict_objects(base64_frame):
     # Convert annotated numpy array image back to base64
     base64_processed_frame = Base64_Transcoder.nparray_to_base64(nparr_processed_frame)
     # Send annotated image to client
-    emit(base64_processed_frame)
+    emit("response_frame", base64_processed_frame)
 
 
 @socketio.event
