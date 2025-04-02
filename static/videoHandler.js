@@ -1,75 +1,51 @@
-document.getElementById("videoInput").addEventListener("change", handleVideoUpload);
+const socket = io();
 
-const canvasList = [];
+socket.on("connect", () => {
+    console.log("Connected to server!");
+});
 
-export async function handleVideoUpload(event) {
+test_data = crypto.randomUUID()
+console.log("Sending Test Data: ", test_data)
+socket.emit("test_socket", test_data);
+
+socket.on("test_response", (data) => {
+    console.log("Received Test Data: ", data)
+})
+
+document.getElementById("videoInput").addEventListener("change", function(event) {
+
     const file = event.target.files[0];
-    if (!file) return;
+    if (file) {
+        const videoURL = URL.createObjectURL(file);
+        const video = document.getElementById("videoPreview"); // Create a hidden video element
+        video.src = videoURL;
+        video.playbackRate = 1.0;
 
-    const url = URL.createObjectURL(file);
-    const video = document.createElement("video");
-    video.src = url;
-    video.crossOrigin = "anonymous";
-    video.muted = true;
+        document.getElementById("videoPreview").addEventListener("play",function(){
+            const canvas = document.getElementById("canvas");
+            const ctx = canvas.getContext("2d");
 
-    await video.play();
+            // Set canvas size to match video resolution
+            canvas.width = 640;
+            canvas.height = 360;
 
-    const canvas = document.createElement("canvas");
-    const ctx = canvas.getContext("2d");
-    canvas.width = video.videoWidth;
-    canvas.height = video.videoHeight;
+            // Capture frames at a steady rate (adjust FPS as needed)
+            const fps = 30; 
+            const interval = 1000 / fps;
+            const drawFrame = setInterval(() => {
+                if (!video.paused && !video.ended) {
+                    ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
 
-    const processor = new MediaStreamTrackProcessor({ track: video.captureStream().getVideoTracks()[0] });
-    const reader = processor.readable.getReader();
-    const decoder = new VideoDecoder({
-        output: frame => processFrame(frame, ctx, canvas),
-        error: err => console.error("Decoder error:", err)
-    });
-
-    decoder.configure({
-        codec: "vp9" // MKV? VP9 or H.264
-    });
-
-    while (true) {
-        const { done, value } = await reader.read();
-        if (done) break;
-        decoder.decode(value);
+                    // Convert to Base64 and display in <img>
+                    const base64Image = canvas.toDataURL("image/webp");
+                    //console.log(base64Image); // Logs the Base64 string
+                    var base64AnnotatedImage = 
+                    document.getElementById("frame").src = base64Image;
+                } else {
+                    clearInterval(drawFrame);
+                    URL.revokeObjectURL(videoURL);
+                }
+            }, interval);
+        });
     }
-
-    
-    //await sendFramesToAPI();
-}
-
-function processFrame(frame, ctx, canvas) {
-    ctx.drawImage(frame, 0, 0, canvas.width, canvas.height);
-    const newCanvas = canvas.cloneNode(true);
-    newCanvas.getContext("2d").drawImage(canvas, 0, 0);
-    canvasList.push(newCanvas);
-    
-    document.dispatchEvent(new CustomEvent("frameExtracted", { detail: newCanvas }));
-
-    frame.close();
-}
-
-// Convert canvas to Base64 and send it to an API
-/*async function sendFramesToAPI() {
-    for (const canvas of canvasList) {
-        const base64Image = canvas.toDataURL("image/png");
-        
-        try {
-            const response = await fetch("", {
-                method: "POST",
-                headers: { "Content-Type": "" },
-                body: JSON.stringify({ image: base64Image })
-            });
-
-            if (!response.ok) throw new Error("Failed to send frame");
-            console.log("Frame sent successfully");
-        } catch (error) {
-            console.error("Error sending frame:", error);
-        }
-    }
-}
-*/
-
-//export { canvasList, sendFramesToAPI };
+});

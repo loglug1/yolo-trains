@@ -6,7 +6,9 @@ from utilities.base64_transcoder import Base64_Transcoder
 # Defines this file for flask as the WSGI app
 app = Flask(__name__)
 
-socketio = SocketIO(app, cors_allowed_origins="https://piehost.com", max_http_buffer_size=10*1000000)
+hostname = "http://localhost:5000"
+
+socketio = SocketIO(app, cors_allowed_origins=["https://piehost.com",hostname], max_http_buffer_size=10*1000000)
 
 yolo = Yolo11s()
 
@@ -26,7 +28,8 @@ def notify_connection(auth):
 # Test SocketIO Functions: https://piehost.com/socketio-tester?v=4&url=http://localhost:5000
 @socketio.event
 def test_socket(data):
-    emit("test_response", "Received: " + data)
+    print("Received Test Data: ", data)
+    emit("test_response", data)
 
 @socketio.event
 def predict_objects(base64_frame):
