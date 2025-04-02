@@ -6,15 +6,24 @@ from PIL import Image
 
 class Base64_Transcoder():
     
+    @staticmethod
+    def data_url_to_nparray(data_url: str) -> np.ndarray :
+        data_url_array = data_url.split(',')
+        if len(data_url_array) < 2:
+            raise Exception("Invalid Data URL Format")
+        if "base64" not in data_url_array[0]:
+            raise Exception("Data URL Does not Contain Base64")
+        return Base64_Transcoder.base64_to_nparray(data_url_array[1])
+
     # Converts image encoded as base64 to numpy image array
     @staticmethod
     def base64_to_nparray(base64_image: str) -> np.ndarray :
-        return np.array(Image.open(io.BytesIO(base64.b64decode(base64_image))))[:, :, ::-1] # The additional array shift at the end is to swap the blue and red channels. It still needs further testing.
+        return np.array(Image.open(io.BytesIO(base64.b64decode(base64_image))))#[:, :, ::-1] # The additional array shift at the end is to swap the blue and red channels. It still needs further testing.
     
     # Converts numpy image array to webp image encoded as base64
     @staticmethod
     def nparray_to_base64(nparr_image: np.ndarray) -> str :
-        img = Image.fromarray(nparr_image[:, :, ::-1])
+        img = Image.fromarray(nparr_image)#[:, :, ::-1])
         buffered = io.BytesIO()
         img.save(buffered, format="webp")
         return base64.b64encode(buffered.getvalue()).decode()
