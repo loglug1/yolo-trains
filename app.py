@@ -40,9 +40,10 @@ def predict_objects(base64_frame):
     # Get image with boxes as numpy array
     nparr_processed_frame = yolo.get_image()
     # Convert annotated numpy array image back to base64
-    base64_processed_frame = Base64_Transcoder.nparray_to_base64(nparr_processed_frame)
+    base64_processed_frame = Base64_Transcoder.nparray_to_data_url(nparr_processed_frame)
     # Send annotated image to client
     emit("annotated_frame", base64_processed_frame)
+    print("Sent frame.")
 
 
 @socketio.event

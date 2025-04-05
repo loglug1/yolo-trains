@@ -27,3 +27,8 @@ class Base64_Transcoder():
         buffered = io.BytesIO()
         img.save(buffered, format="webp")
         return base64.b64encode(buffered.getvalue()).decode()
+    
+    @staticmethod
+    def nparray_to_data_url(nparray: np.ndarray) -> str :
+        base64 = Base64_Transcoder.nparray_to_base64(nparray)
+        return "data:image/webp;base64," + base64
