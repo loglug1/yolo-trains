@@ -1,25 +1,37 @@
-const socket = io();
+class AnnotatedVideoPlayer {
+    constructor(imgID) {
+        this.frameQueue = [];
+        this.imgElement = document.getElementById(imgID)
+    }
 
-var frameQueue = [];
+    play() {
+        const fps = 10; 
+        const interval = 1000 / fps;
+        var skippedFrames = 0;
+        this.annotatedPlayer = setInterval(() => {
+            if (this.frameQueue.length > 0) {
+                for (var i = 0; i <= skippedFrames && this.frameQueue.length > 0; i++) { // Display the number of skipped frames + the current frame
+                    console.log("displayed frame");
+                    this.imgElement.src = this.frameQueue.shift();
+                }
+            } else {
+                skippedFrames++;
+                console.log("queue empty");
+            }
+        }, interval);
+    }
+    
+    pause() {
+        clearInterval(this.annotatedPlayer);
+    }
 
-socket.on("connect", () => {
-    console.log("Connected to server!");
-    sequenceTest();
-});
+    clearQueue() {
+        this.frameQueue = [];
+    }
 
-socket.on("test_response", (data) => {
-    console.log("Received Test Data: ", data)
-    msElapsed = Date.now() - parseInt(data);
-    console.log("Time elapsed: ", msElapsed);
-});
-
-socket.on("annotated_frame", (dataURL) => {
-    console.log("Received Frame");
-    frameQueue.push(dataURL)
-});
-
-function predictObjects(dataUrl) {
-    socket.emit("predict_objects", dataUrl);
+    queueFrame(frame) {
+        this.frameQueue.push(frame);
+    }
 }
 
 function sequenceTest() {
@@ -38,6 +50,28 @@ function sequenceTest() {
     }, interval);
 }
 
+const socket = io();
+
+socket.on("connect", () => {
+    console.log("Connected to server!");
+    window.annotatedVideoPlayer = new AnnotatedVideoPlayer("frame");
+});
+
+socket.on("test_response", (data) => {
+    console.log("Received Test Data: ", data);
+    msElapsed = Date.now() - parseInt(data);
+    console.log("Time elapsed: ", msElapsed);
+});
+
+socket.on("receive_annotated_frame", (dataURL) => {
+    console.log("Received Frame");
+    window.annotatedVideoPlayer.queueFrame(dataURL);
+});
+
+function predictObjects(dataUrl) {
+    socket.emit("predict_objects", dataUrl);
+}
+
 document.getElementById("videoInput").addEventListener("change", function(event) {
 
     const file = event.target.files[0];
@@ -48,34 +82,35 @@ document.getElementById("videoInput").addEventListener("change", function(event)
         video.playbackRate = 1.0;
 
         document.getElementById("videoPreview").addEventListener("play",function(){
-            const canvas = document.getElementById("canvas");
-            const ctx = canvas.getContext("2d");
+            const hiddenSourceCanvas = document.getElementById("hiddenSourceCanvas");
+            const ctx = hiddenSourceCanvas.getContext("2d");
 
             // Set canvas size to match video resolution
-            canvas.width = 640;
-            canvas.height = 360;
+            hiddenSourceCanvas.width = 640;
+            hiddenSourceCanvas.height = 360;
 
             // Capture frames at a steady rate (adjust FPS as needed)
             const fps = 10; 
             const interval = 1000 / fps;
             const drawFrame = setInterval(() => {
                 if (!video.paused && !video.ended) {
-                    ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+                    ctx.drawImage(video, 0, 0, hiddenSourceCanvas.width, hiddenSourceCanvas.height);
 
                     // Convert to Base64 and display in <img>
-                    const base64Image = canvas.toDataURL("image/webp");
+                    const base64Image = hiddenSourceCanvas.toDataURL("image/webp");
                     predictObjects(base64Image)
-                    if (frameQueue.length > 1) {
-                        document.getElementById("frame").src = frameQueue.shift();
-                    } else {
-                        console.log("No frames to show!")
-                    }
                     //console.log(base64Image); // Logs the Base64 string                    
                 } else {
+                    if (video.ended) {
+                        URL.revokeObjectURL(videoURL);
+                    }
+                    window.annotatedVideoPlayer.pause();
                     clearInterval(drawFrame);
-                    URL.revokeObjectURL(videoURL);
                 }
             }, interval);
         });
+
+        video.play();
+        window.annotatedVideoPlayer.play();
     }
 });

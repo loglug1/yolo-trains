@@ -31,6 +31,8 @@ def test_socket(data):
     print("Received Test Data: ", data)
     emit("test_response", data)
 
+
+frame_count = 0
 @socketio.event
 def predict_objects(base64_frame):
     # Convert frame to numpy array
@@ -42,8 +44,10 @@ def predict_objects(base64_frame):
     # Convert annotated numpy array image back to base64
     base64_processed_frame = Base64_Transcoder.nparray_to_data_url(nparr_processed_frame)
     # Send annotated image to client
-    emit("annotated_frame", base64_processed_frame)
-    print("Sent frame.")
+    emit("receive_annotated_frame", base64_processed_frame)
+    global frame_count
+    frame_count += 1
+    print(f"Sent frame. {frame_count}")
 
 
 @socketio.event
