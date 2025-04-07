@@ -18,11 +18,20 @@ def static_page(file = "index.html"):
     return send_from_directory("static", file)
 
 
+# Output Connection Events to Console
+@socketio.on('connect')
+def notify_connection(auth):
+    print("Client Connected!")
+
 # Test SocketIO Functions: https://piehost.com/socketio-tester?v=4&url=http://localhost:5000
+@socketio.event
+def test_socket(data):
+    emit("test_response", "Received: " + data)
+
 @socketio.event
 def predict_objects(base64_frame):
     # Convert frame to numpy array
-    nparr_frame = Base64_Transcoder.base64_to_nparray(base64_frame)
+    nparr_frame = Base64_Transcoder.data_url_to_nparray(base64_frame)
     # Run predictions on numpy array frame
     yolo.predict_objects_in(nparr_frame)
     # Get image with boxes as numpy array
@@ -30,13 +39,14 @@ def predict_objects(base64_frame):
     # Convert annotated numpy array image back to base64
     base64_processed_frame = Base64_Transcoder.nparray_to_base64(nparr_processed_frame)
     # Send annotated image to client
-    emit("response_frame", base64_processed_frame)
+    emit("annotated_frame", base64_processed_frame)
+    emit("objects_json_response", yolo.get_boxes_json())
 
 
 @socketio.event
 def test_base64_transcoder(base64_image):
     # Convert base64 input to numpy array
-    nparr_image = Base64_Transcoder.base64_to_nparray(base64_image)
+    nparr_image = Base64_Transcoder.data_url_to_nparray(base64_image)
     # Convert numpy array back to base64 to verify lossless conversion
     base64_response = Base64_Transcoder.nparray_to_base64(nparr_image)
     # Respond with converted data
