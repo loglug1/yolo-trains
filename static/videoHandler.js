@@ -108,9 +108,9 @@ document.getElementById("videoInput").addEventListener("change", function(event)
                     clearInterval(drawFrame);
                 }
             }, interval);
+            window.annotatedVideoPlayer.play();
         });
 
         video.play();
-        window.annotatedVideoPlayer.play();
     }
 });
