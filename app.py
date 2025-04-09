@@ -2,14 +2,23 @@ from flask import Flask, send_from_directory
 from flask_socketio import SocketIO, send, emit
 from ai_modules.yolo11s import Yolo11s
 from utilities.base64_transcoder import Base64_Transcoder
+import argparse
 from ai_modules.tensorflow import TensorFlowModel
 
 # Defines this file for flask as the WSGI app
 app = Flask(__name__)
 
-hostname = "http://localhost:5000"
+parser = argparse.ArgumentParser(description='Run Railway Object Detection ')
 
-socketio = SocketIO(app, cors_allowed_origins=["https://piehost.com",hostname], max_http_buffer_size=10*1000000)
+parser.add_argument('--address', dest='hostname', default="localhost", help="Network interface to start the socketIO/webserver on.")
+parser.add_argument('--port', dest='port', default='5000', help="Specifies the port for the socketIO/web server to start on.")
+
+args = parser.parse_args()
+
+hostname = args.hostname
+port = args.port
+
+socketio = SocketIO(app, cors_allowed_origins=["https://piehost.com",f"http://{hostname}:{port}"], max_http_buffer_size=10*1000000)
 
 yolo = Yolo11s()
 #tensor = TensorFlowModel("ssd_mobilenet_v2_coco_2018_05_09/ssd_mobilenet_v2_coco_2018_05_09/saved_model/saved_model.pb")
@@ -66,5 +75,5 @@ def get_json():
     emit(yolo.get_boxes_json)
 
 if __name__ == '__main__':
-    socketio.run(app)
+    socketio.run(app, host = hostname, port = port)
 
