@@ -44,11 +44,12 @@ def predict_objects(base64_frame):
     # Convert annotated numpy array image back to base64
     base64_processed_frame = Base64_Transcoder.nparray_to_data_url(nparr_processed_frame)
     # Send annotated image to client
+
     emit("receive_annotated_frame", base64_processed_frame)
+    emit("objects_json_response", yolo.get_boxes_json())
     global frame_count
     frame_count += 1
     print(f"Sent frame. {frame_count}")
-
 
 @socketio.event
 def test_base64_transcoder(base64_image):
