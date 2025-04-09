@@ -3,6 +3,7 @@ from flask_socketio import SocketIO, send, emit
 from ai_modules.yolo11s import Yolo11s
 from utilities.base64_transcoder import Base64_Transcoder
 import argparse
+from ai_modules.tensorflow import TensorFlowModel
 
 # Defines this file for flask as the WSGI app
 app = Flask(__name__)
@@ -20,7 +21,7 @@ port = args.port
 socketio = SocketIO(app, cors_allowed_origins=["https://piehost.com",f"http://{hostname}:{port}"], max_http_buffer_size=10*1000000)
 
 yolo = Yolo11s()
-
+#tensor = TensorFlowModel("ssd_mobilenet_v2_coco_2018_05_09/ssd_mobilenet_v2_coco_2018_05_09/saved_model/saved_model.pb")
 
 # Serves content from the static directory to the root URL using flask
 @app.route("/")
