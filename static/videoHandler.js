@@ -72,45 +72,50 @@ function predictObjects(dataUrl) {
     socket.emit("predict_objects", dataUrl);
 }
 
-document.getElementById("videoInput").addEventListener("change", function(event) {
+const video = document.getElementById("videoPreview");
+const hiddenSourceCanvas = document.getElementById("hiddenSourceCanvas");
+const videoInput = document.getElementById("videoInput");
+var drawFrameInterval = Number();
+var videoURL = null;
 
+videoInput.addEventListener("change", function(event) { // Register event listener for when file is 'uploaded'
     const file = event.target.files[0];
     if (file) {
-        const videoURL = URL.createObjectURL(file);
-        const video = document.getElementById("videoPreview"); // Create a hidden video element
+        video.pause();
+        
+        clearInterval(drawFrameInterval);
+
+        URL.revokeObjectURL(videoURL);
+        videoURL = URL.createObjectURL(file);
+
         video.src = videoURL;
         video.playbackRate = 1.0;
-
-        document.getElementById("videoPreview").addEventListener("play",function(){
-            const hiddenSourceCanvas = document.getElementById("hiddenSourceCanvas");
-            const ctx = hiddenSourceCanvas.getContext("2d");
-
-            // Set canvas size to match video resolution
-            hiddenSourceCanvas.width = 640;
-            hiddenSourceCanvas.height = 360;
-
-            // Capture frames at a steady rate (adjust FPS as needed)
-            const fps = 10; 
-            const interval = 1000 / fps;
-            const drawFrame = setInterval(() => {
-                if (!video.paused && !video.ended) {
-                    ctx.drawImage(video, 0, 0, hiddenSourceCanvas.width, hiddenSourceCanvas.height);
-
-                    // Convert to Base64 and display in <img>
-                    const base64Image = hiddenSourceCanvas.toDataURL("image/webp");
-                    predictObjects(base64Image)
-                    //console.log(base64Image); // Logs the Base64 string                    
-                } else {
-                    if (video.ended) {
-                        URL.revokeObjectURL(videoURL);
-                    }
-                    window.annotatedVideoPlayer.pause();
-                    clearInterval(drawFrame);
-                }
-            }, interval);
-            window.annotatedVideoPlayer.play();
-        });
-
         video.play();
     }
+});
+
+video.addEventListener("play",function() { // Register event listener for when video element is played
+    const ctx = hiddenSourceCanvas.getContext("2d");
+
+    // Set canvas size to match video resolution
+    hiddenSourceCanvas.width = 640;
+    hiddenSourceCanvas.height = 360;
+
+    // Capture frames at a steady rate (adjust FPS as needed)
+    const fps = 10; 
+    const interval = 1000 / fps;
+    drawFrameInterval = setInterval(() => {
+        if (!video.paused && !video.ended) {
+            ctx.drawImage(video, 0, 0, hiddenSourceCanvas.width, hiddenSourceCanvas.height);
+
+            // Convert to Base64 and display in <img>
+            const base64Image = hiddenSourceCanvas.toDataURL("image/webp");
+            predictObjects(base64Image)
+            //console.log(base64Image); // Logs the Base64 string                    
+        } else {
+            annotatedVideoPlayer.pause();
+            clearInterval(drawFrameInterval);
+        }
+    }, interval);
+    window.annotatedVideoPlayer.play();
 });
