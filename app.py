@@ -42,6 +42,7 @@ def test_socket(data):
     emit("test_response", data)
 
 
+# Main socket event that receives frames and processes them using the currently active AI model
 frame_count = 0
 @socketio.event
 def predict_objects(base64_frame):
@@ -61,6 +62,7 @@ def predict_objects(base64_frame):
     frame_count += 1
     print(f"Sent frame. {frame_count}")
 
+# Socket event to test the base64 transcoder functions
 @socketio.event
 def test_base64_transcoder(base64_image):
     # Convert base64 input to numpy array
@@ -70,6 +72,7 @@ def test_base64_transcoder(base64_image):
     # Respond with converted data
     emit(base64_response)
 
+# Socket event that will respond with the JSON of objects
 @socketio.event
 def get_json():
     emit(yolo.get_boxes_json)
