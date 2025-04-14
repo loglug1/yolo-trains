@@ -119,3 +119,30 @@ video.addEventListener("play",function() { // Register event listener for when v
     }, interval);
     window.annotatedVideoPlayer.play();
 });
+
+// Model File Change
+const modelFileInput = document.getElementById('modelFileInput');
+
+modelFileInput.addEventListener('change', () => {
+  const file = modelFileInput.files[0];
+
+  if (file) {
+    const formData = new FormData();
+    formData.append('modelFile', file);
+
+    fetch('/uploadModel', {
+      method: 'POST',
+      body: formData,
+    })
+    .then(response => {
+      if (response.ok) {
+        response.json().then(data => {console.log(data);});
+      } else {
+        console.error('File upload failed');
+      }
+    })
+    .catch(error => {
+      console.error('Error uploading file:', error);
+    });
+  }
+});

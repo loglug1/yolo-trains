@@ -9,8 +9,6 @@ Description: Provides a constrict class outline for all models to have for inter
 '''
 
 from abc import ABC, abstractmethod
-import base64
-import json
 import numpy as np
 
 class ObjectDetectionModel :
