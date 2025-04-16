@@ -5,6 +5,7 @@ class AnnotatedVideoPlayer {
     }
 
     play() {
+        this.frameQueue = [];
         const fps = 10; 
         const interval = 1000 / fps;
         var skippedFrames = 0;
@@ -113,7 +114,8 @@ video.addEventListener("play",function() { // Register event listener for when v
             predictObjects(base64Image)
             //console.log(base64Image); // Logs the Base64 string                    
         } else {
-            annotatedVideoPlayer.pause();
+	    console.log('paused');
+            window.annotatedVideoPlayer.pause();
             clearInterval(drawFrameInterval);
         }
     }, interval);
@@ -136,13 +138,13 @@ modelFileInput.addEventListener('change', () => {
     })
     .then(response => {
       if (response.ok) {
-        response.json().then(data => {console.log(data);});
+        response.json().then(data => {alert(data['upload_status']);});
       } else {
-        console.error('File upload failed');
+        alert('File upload failed');
       }
     })
     .catch(error => {
-      console.error('Error uploading file:', error);
+      alert('Error uploading file:' + error);
     });
   }
 });
