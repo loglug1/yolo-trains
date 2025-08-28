@@ -9,6 +9,8 @@
       integrity="sha384-mkQ3/7FUtcGyoppY6bz/PORYoGqOl7/aSUMn2ymDOJcapfS6PHqxhRTMh1RR0Q6+"
       crossorigin="anonymous"
     ></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="graphHandler.js" defer></script>
     <title>Train AI Tester</title>
   </head>
   <body>
@@ -40,7 +42,9 @@
             <video id="videoPreview" width="640" height="360" controls></video>
             <img id="frame" />
         </div>
-        <div class="graph-wrapper">Graph</div>
+        <div class="graph-wrapper">Graph
+            <canvas id="tempScatterChart" width="640" height="360"></canvas>
+        </div>
       </div>
 
       <div class="video-data-pane-wrapper">Data Pane</div>
