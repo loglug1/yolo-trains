@@ -3,7 +3,7 @@ from flask_socketio import SocketIO, send, emit
 from ai_modules.yolo11s import Yolo11s
 from utilities.base64_transcoder import Base64_Transcoder
 import argparse
-from ai_modules.tensorflow import TensorFlowModel
+#from ai_modules.tensorflow import TensorFlowModel
 
 # Defines this file for flask as the WSGI app
 app = Flask(__name__)
