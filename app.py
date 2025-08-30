@@ -1,4 +1,6 @@
-from flask import Flask, send_from_directory
+from flask import Flask, send_from_directory, request
+from werkzeug.utils import secure_filename
+import os
 from flask_socketio import SocketIO, send, emit
 from ai_modules.yolo11s import Yolo11s
 from utilities.base64_transcoder import Base64_Transcoder
@@ -7,6 +9,7 @@ import argparse
 
 # Defines this file for flask as the WSGI app
 app = Flask(__name__)
+app.config['MAX_CONTENT_LENGTH'] = 2 * 1000 * 1000 * 1000 # 2GB max model file size
 
 parser = argparse.ArgumentParser(description='Run Railway Object Detection ')
 
@@ -20,7 +23,14 @@ port = args.port
 
 socketio = SocketIO(app, cors_allowed_origins=["https://piehost.com",f"http://{hostname}:{port}"], max_http_buffer_size=10*1000000)
 
-yolo = Yolo11s()
+DEFAULT_MODELS = {'yolo': 'ai_modules/ob_detect_models/yolo11s.pt'}
+model_file = DEFAULT_MODELS['yolo']
+def change_model_file(new_model_path):
+    if model_file not in DEFAULT_MODELS.values():
+        os.remove(model_file)
+    model_file = new_model_path
+
+object_detection_model = Yolo11s()
 #tensor = TensorFlowModel("ssd_mobilenet_v2_coco_2018_05_09/ssd_mobilenet_v2_coco_2018_05_09/saved_model/saved_model.pb")
 
 # Serves content from the static directory to the root URL using flask
@@ -29,6 +39,32 @@ yolo = Yolo11s()
 def static_page(file = "index.html"):
     return send_from_directory("static", file)
 
+# HTTP endpoint to allowing file uploads for model files
+ALLOWED_EXTENSIONS = ['pt']
+CUSTOM_MODEL_LOCATION = 'ai_modules/ob_detect_models/custom/'
+def allowed_extension(filename):
+    return '.' in filename and filename.split('.')[1].lower() in ALLOWED_EXTENSIONS
+
+import sys
+@app.route("/uploadModel", methods=['POST'])
+def change_model():
+    if request.method == 'POST':
+        if 'modelFile' not in request.files:
+            return {'upload_status': 'invalid_request'}
+        file = request.files['modelFile']
+        if file.filename == '':
+            return {'upload_status': 'no_file'}
+        if not file or not allowed_extension(file.filename):
+            return {'upload_status': 'invalid_filetype'}
+        # Overwrite previous custom model
+        file_extension = secure_filename(file.filename).split('.')[1].lower()
+        new_path = os.path.join(CUSTOM_MODEL_LOCATION, 'customModel.' + file_extension)
+        file.save(new_path)
+        # Change model to new file
+        global object_detection_model
+        object_detection_model = Yolo11s(new_path)
+        return {'upload_status': 'success'}
+            
 
 # Output Connection Events to Console
 @socketio.on('connect')
@@ -49,15 +85,15 @@ def predict_objects(base64_frame):
     # Convert frame to numpy array
     nparr_frame = Base64_Transcoder.data_url_to_nparray(base64_frame)
     # Run predictions on numpy array frame
-    yolo.predict_objects_in(nparr_frame)
+    object_detection_model.predict_objects_in(nparr_frame)
     # Get image with boxes as numpy array
-    nparr_processed_frame = yolo.get_image()
+    nparr_processed_frame = object_detection_model.get_image()
     # Convert annotated numpy array image back to base64
     base64_processed_frame = Base64_Transcoder.nparray_to_data_url(nparr_processed_frame)
     # Send annotated image to client
 
     emit("receive_annotated_frame", base64_processed_frame)
-    emit("objects_json_response", yolo.get_boxes_json())
+    emit("objects_json_response", object_detection_model.get_boxes_json())
     global frame_count
     frame_count += 1
     print(f"Sent frame. {frame_count}")

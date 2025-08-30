@@ -35,7 +35,7 @@ def main():
         if out.isOpened() == False:
             raise Exception("Error writing to output file!")
     
-    yolo = Yolo11s("ai_modules/ob_detect_models/yolo11s.pt")
+    yolo = Yolo11s("ai_modules/ob_detect_models/custom/customModel.pt")
 
     while(cap.isOpened()):
         ret, frame = cap.read()
