@@ -211,6 +211,7 @@ def test_socket(data):
 frame_count = 0
 @socketio.event
 def predict_objects(base64_frame):
+    object_detection_model = Yolo11s()
     # Convert frame to numpy array
     nparr_frame = Base64_Transcoder.data_url_to_nparray(base64_frame)
     # Run predictions on numpy array frame
@@ -236,11 +237,6 @@ def test_base64_transcoder(base64_image):
     base64_response = Base64_Transcoder.nparray_to_base64(nparr_image)
     # Respond with converted data
     emit(base64_response)
-
-# Socket event that will respond with the JSON of objects
-@socketio.event
-def get_json():
-    emit(object_detection_model.get_boxes_json)
 
 if __name__ == '__main__':
     socketio.run(app, host = hostname, port = port, async_mode='threading')
