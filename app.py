@@ -5,6 +5,8 @@ from flask_socketio import SocketIO, send, emit
 from ai_modules.yolo11s import Yolo11s
 from utilities.base64_transcoder import Base64_Transcoder
 import argparse
+import uuid
+import hashlib
 #from ai_modules.tensorflow import TensorFlowModel
 
 # Defines this file for flask as the WSGI app
@@ -23,6 +25,7 @@ port = args.port
 
 socketio = SocketIO(app, cors_allowed_origins=["https://piehost.com",f"http://{hostname}:{port}"], max_http_buffer_size=10*1000000)
 
+# Remembers the default models
 DEFAULT_MODELS = {'yolo': 'ai_modules/ob_detect_models/yolo11s.pt'}
 model_file = DEFAULT_MODELS['yolo']
 def change_model_file(new_model_path):
@@ -30,8 +33,11 @@ def change_model_file(new_model_path):
         os.remove(model_file)
     model_file = new_model_path
 
+# Function to get file hashes (used as ids for videos and models)
+def get_sha256(file_bytes):
+    return hashlib.sha256(file_bytes).hexdigest()
+
 object_detection_model = Yolo11s()
-#tensor = TensorFlowModel("ssd_mobilenet_v2_coco_2018_05_09/ssd_mobilenet_v2_coco_2018_05_09/saved_model/saved_model.pb")
 
 # Serves content from the static directory to the root URL using flask
 @app.route("/")
@@ -39,31 +45,78 @@ object_detection_model = Yolo11s()
 def static_page(file = "index.html"):
     return send_from_directory("static", file)
 
-# HTTP endpoint to allowing file uploads for model files
-ALLOWED_EXTENSIONS = ['pt']
-CUSTOM_MODEL_LOCATION = 'ai_modules/ob_detect_models/custom/'
-def allowed_extension(filename):
-    return '.' in filename and filename.split('.')[1].lower() in ALLOWED_EXTENSIONS
+# Constant defining what file types can be uploaded
+ALLOWED_MODEL_EXTENSIONS = ['pt']
+ALLOWED_VIDEO_EXTENSIONS = ['mp4', 'mkv']
+MODEL_LOCATION = 'ai_modules/ob_detect_models/custom/'
+VIDEO_LOCATION = 'test_videos/upload/'
+def validate_extension(filename, extension_list):
+    return '.' in filename and filename.split('.')[1].lower() in ALLOWED_MODEL_EXTENSIONS
+def get_basename(filename):
+    return filename.split('.')[0]
 
-import sys
-@app.route("/uploadModel", methods=['POST'])
-def change_model():
+@app.route("/models", methods=['POST'])
+def upload_model():
     if request.method == 'POST':
-        if 'modelFile' not in request.files:
-            return {'upload_status': 'invalid_request'}
-        file = request.files['modelFile']
+        if 'model_file' not in request.files:
+            return "File part not found in request", 400
+        file = request.files['model_file']
         if file.filename == '':
-            return {'upload_status': 'no_file'}
-        if not file or not allowed_extension(file.filename):
-            return {'upload_status': 'invalid_filetype'}
-        # Overwrite previous custom model
+            return "No file uploaded", 400
+        if not file or not validate_extension(file.filename, ALLOWED_MODEL_EXTENSIONS):
+            return "Invalid file extension", 400
+        file_bytes = file.read()
+        # Generate Metadata for model
+        model_id = get_sha256(file_bytes)
+        name = get_basename(file.filename)
+
+        # Save Model to Blob Storage
         file_extension = secure_filename(file.filename).split('.')[1].lower()
-        new_path = os.path.join(CUSTOM_MODEL_LOCATION, 'customModel.' + file_extension)
+        new_path = os.path.join(MODEL_LOCATION, secure_filename(name) + '.' + file_extension)
         file.save(new_path)
-        # Change model to new file
-        global object_detection_model
-        object_detection_model = Yolo11s(new_path)
-        return {'upload_status': 'success'}
+
+        # Save Model Database Entry
+
+    
+        # Return model info
+        return {'model_id': model_id, 'name': name}, 201
+    
+@app.route("/videos", methods=['POST'])
+def upload_video():
+    if request.method == 'POST':
+        if 'video_file' not in request.files:
+            return "File part not found in request", 400
+        file = request.files['video_file']
+        if file.filename == '':
+            return "No file uploaded", 400
+        if not file or not validate_extension(file.filename, ALLOWED_VIDEO_EXTENSIONS):
+            return "Invalid file extension", 400
+        file_bytes = file.read()
+        # Generate Metadata for video
+        video_id = get_sha256(file_bytes)
+        name = get_basename(file.filename)
+        # Get Number of Video Frames
+        num_frames = 25
+        for i in range(0,25):
+            socketio.send("Frame {i}")
+
+        # Save Video Database Entry
+
+        # Return video info
+        return {'video_id': video_id, 'name': name, 'num_frames': num_frames}
+
+
+def _fake_worker(id):
+    print("Before count")
+    for i in range(0,25):
+        socketio.sleep(1)
+        socketio.send(f"{id}: Frame {i}")
+    print("Post count")
+
+@app.route('/videos/<video_id>')
+def get_video(video_id):
+    socketio.start_background_task(_fake_worker, (video_id,))
+    return "response", 200
             
 
 # Output Connection Events to Console
@@ -111,7 +164,7 @@ def test_base64_transcoder(base64_image):
 # Socket event that will respond with the JSON of objects
 @socketio.event
 def get_json():
-    emit(yolo.get_boxes_json)
+    emit(object_detection_model.get_boxes_json)
 
 if __name__ == '__main__':
     socketio.run(app, host = hostname, port = port)
