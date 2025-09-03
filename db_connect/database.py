@@ -35,13 +35,26 @@ def create_tables(conn, cursor) -> Response :
         frame_uuid VARCHAR(16) UNIQUE PRIMARY KEY,
         video_uuid REFERENCES videos(video_uuid),
         frame_number INTEGER NOT NULL,
-        image_url VARCHAR(255) NOT NULL,
+        video_url VARCHAR(255) NOT NULL,
         CONSTRAINT unique_frame UNIQUE (video_uuid, frame_number)
       );
     """, 
 
     f"""
       CREATE INDEX IF NOT EXISTS idx_frames_video ON frames (video_uuid);
+    """,
+
+    f"""
+      CREATE TABLE IF NOT EXISTS processed_frames (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        frame_uuid REFERENCES frames(frame_uuid),
+        model_uuid REFERENCES models(model_uuid),
+        CONSTRAINT unique_object UNIQUE (frame_uuid, model_uuid)
+      );
+    """,
+
+    f"""
+      CREATE INDEX IF NOT EXISTS idx_model_frame ON processed_frames (model_uuid, frame_uuid);
     """,
 
     f"""
@@ -104,14 +117,23 @@ def insert_model(conn, cursor, model_uuid: str, title: str, model_url: str) -> R
   except Exception as e :
     return Response("error", f"Insert model failed: {str(e)}")
 
-def insert_frame(conn, cursor, frame_uuid: str, video_uuid: str, frame_number: int, image_url: str) -> Response :
+def insert_frame(conn, cursor, frame_uuid: str, video_uuid: str, frame_number: int, video_url: str) -> Response :
   try :
-    cursor.execute("""INSERT INTO frames (frame_uuid, video_uuid, frame_number, image_url) VALUES (?, ?, ?, ?)""", (frame_uuid, video_uuid, frame_number, image_url))
+    cursor.execute("""INSERT INTO frames (frame_uuid, video_uuid, frame_number, video_url) VALUES (?, ?, ?, ?)""", (frame_uuid, video_uuid, frame_number, video_url))
     conn.commit()
     return Response("success", f"Frame {frame_uuid} inserted successfully.")
 
   except Exception as e :
     return Response("error", f"Insert frame failed: {str(e)}")
+  
+def insert_processed_frame(conn, cursor, frame_uuid: str, model_uuid: str) -> Response :
+  try :
+    cursor.execute("""INSERT INTO processed_frames (frame_uuid, model_uuid) VALUES (?, ?)""", (frame_uuid, model_uuid))
+    conn.commit()
+    return Response("success", f"Processed frame {frame_uuid} with model {model_uuid} inserted successfully.")
+  
+  except Exception as e :
+    return Response("error", f"Insert processed frame failed: {str(e)}")
 
 def insert_object(conn, cursor, type: int, frame_uuid: str, model_uuid: str, 
                     confidence: float, x1: float, y1: float, x2: float, y2: float) -> Response :
@@ -237,6 +259,39 @@ def get_model(conn, cursor, model_uuid: str) -> ModelResponse :
     return ModelResponse(Response("error", f"Get model failed: {str(e)}"), None)
 
 
+# QUERY PROCESSED-FRAMES FUNCTIONS
+# classes
+class ProcessedFrame:
+  def __init__(self, frame_uuid: str, model_uuid: str) :
+    self.frame_uuid = frame_uuid
+    self.model_uuid = model_uuid
+
+  def __str__(self):
+    return f"Frame: {self.frame_uuid} Model: {self.model_uuid}"
+  
+class ProcessedFrameResponse:
+  def __init__(self, response: Response, processed_frame: ProcessedFrame) :
+    self.response = response
+    self.processed_frame = processed_frame
+
+  def __str__(self):
+    return str(self.response) + (f"\n{self.processed_frame}" if self.processed_frame else "")
+  
+# definitions 
+def get_processed_frame(conn, cursor, frame_uuid: str, model_uuid: str) -> ProcessedFrameResponse :
+  try :
+    cursor.execute("SELECT frame_uuid, model_uuid FROM processed_frames WHERE frame_uuid = ? AND model_uuid = ?", (frame_uuid, model_uuid))
+    row = cursor.fetchone()
+    if row :
+      processed_frame = ProcessedFrame(frame_uuid=row[0], model_uuid=row[1])
+      return ProcessedFrameResponse(Response("success", f"Processed frame for frame {frame_uuid} and model {model_uuid} successfully found."), processed_frame)
+    else :
+      return ProcessedFrameResponse(Response("error", f"Processed frame for frame {frame_uuid} and model {model_uuid} not found."), None)
+    
+  except Exception as e :
+    return ProcessedFrameResponse(Response("error", f"Get processed frame failed: {str(e)}"), None)
+
+
 # QUERY OBJECT-TYPES FUNCTIONS
 # classes
 class ObjectType:
@@ -305,15 +360,15 @@ class Object:
   __repr__ = __str__
 
 class Frame:
-  def __init__(self, frame_uuid: str, video_uuid: str, frame_number: int, image_url: str, objects: list[Object] = []):
+  def __init__(self, frame_uuid: str, video_uuid: str, frame_number: int, video_url: str, objects: list[Object] = []):
     self.frame_uuid = frame_uuid
     self.video_uuid = video_uuid
     self.frame_number = frame_number
-    self.image_url = image_url
+    self.video_url = video_url
     self.objects: list[Object] = []
 
   def __str__(self):
-    return f"[{self.frame_uuid}] Video: {self.video_uuid}, Frame Number: {self.frame_number}, Image Size: {self.image_url}" + (f", Objects: {len(self.objects)}" if self.objects else "")
+    return f"[{self.frame_uuid}] Video: {self.video_uuid}, Frame Number: {self.frame_number}, Video Url: {self.video_url}" + (f", Objects: {len(self.objects)}" if self.objects else "")
   
   def add_objects(self, objects: list[Object]):
     self.objects.extend(objects)
@@ -340,10 +395,10 @@ class FrameListResponse:
 # definitions
 def get_frame(conn, cursor, video_uuid: str, frame_number: int) -> FrameResponse :
   try :
-    cursor.execute("SELECT frame_uuid, video_uuid, frame_number, image_url FROM frames WHERE video_uuid = ? AND frame_number = ?", (video_uuid, frame_number))
+    cursor.execute("SELECT frame_uuid, video_uuid, frame_number, video_url FROM frames WHERE video_uuid = ? AND frame_number = ?", (video_uuid, frame_number))
     row = cursor.fetchone()
     if row :
-      frame = Frame(frame_uuid=row[0], video_uuid=row[1], frame_number=row[2], image_url=row[3])
+      frame = Frame(frame_uuid=row[0], video_uuid=row[1], frame_number=row[2], video_url=row[3])
       return FrameResponse(Response("success", f"Frame {frame_number} of video {video_uuid} fetched successfully."), frame)
     else :
       return FrameResponse(Response("error", f"Frame {frame_number} of video {video_uuid} not found."), None)
@@ -354,7 +409,7 @@ def get_frame(conn, cursor, video_uuid: str, frame_number: int) -> FrameResponse
 def get_frame_with_objects(conn, cursor, video_uuid: str, model_uuid: str, frame_number: int) -> FrameResponse :
   try :
     cursor.execute("""
-      SELECT f.frame_uuid, f.video_uuid, f.frame_number, f.image_url,
+      SELECT f.frame_uuid, f.video_uuid, f.frame_number, f.video_url,
         ot.name, o.model_uuid, o.confidence, o.x1, o.y1, o.x2, o.y2
       FROM frames f
       LEFT JOIN objects o ON f.frame_uuid = o.frame_uuid
@@ -364,7 +419,7 @@ def get_frame_with_objects(conn, cursor, video_uuid: str, model_uuid: str, frame
     rows = cursor.fetchall()
     if rows :
       first_row = rows[0]
-      frame = Frame(frame_uuid=first_row[0], video_uuid=first_row[1], frame_number=first_row[2], image_url=first_row[3])
+      frame = Frame(frame_uuid=first_row[0], video_uuid=first_row[1], frame_number=first_row[2], video_url=first_row[3])
       objects = []
       for row in rows :
         if row[4] is not None :  # if there is an object
@@ -378,10 +433,29 @@ def get_frame_with_objects(conn, cursor, video_uuid: str, model_uuid: str, frame
   except Exception as e :
     return FrameResponse(Response("error", f"Get frame with objects failed: {str(e)}"), None)
   
-def get_frame_list(conn, cursor, video_uuid: str, model_uuid: str) -> FrameListResponse :
+def get_frame_list(conn, cursor, video_uuid: str) -> FrameListResponse :
+  try :
+    cursor.execute("""SELECT frame_uuid, video_uuid, frame_number, video_url FROM frames WHERE video_uuid = ? ORDER BY frame_number ASC""", (video_uuid))
+    rows = cursor.fetchall()
+    if rows :
+      frames_dict = {}
+      for row in rows :
+        frame_uuid = row[0]
+        if frame_uuid not in frames_dict :
+          frames_dict[frame_uuid] = Frame(frame_uuid=row[0], video_uuid=row[1], frame_number=row[2], video_url=row[3], objects={})
+        frames = list(frames_dict.values())
+        return FrameListResponse(Response("success"))
+      return FrameListResponse(Response("success", f"Frames of video {video_uuid} fetched successfully."), frames)
+    else :
+      return FrameListResponse(Response("error", f"No frames found for video {video_uuid}."), [])
+
+  except Exception as e :
+    return FrameListResponse(Response("error", f"Get frames failed: {str(e)}"), [])
+
+def get_frame_list_with_objects(conn, cursor, video_uuid: str, model_uuid: str) -> FrameListResponse :
   try :
     cursor.execute("""
-      SELECT f.frame_uuid, f.video_uuid, f.frame_number, f.image_url,
+      SELECT f.frame_uuid, f.video_uuid, f.frame_number, f.video_url,
         ot.name, o.model_uuid, o.confidence, o.x1, o.y1, o.x2, o.y2
       FROM frames f
       LEFT JOIN objects o 
@@ -397,7 +471,7 @@ def get_frame_list(conn, cursor, video_uuid: str, model_uuid: str) -> FrameListR
       for row in rows :
         frame_uuid = row[0]
         if frame_uuid not in frames_dict :
-          frames_dict[frame_uuid] = Frame(frame_uuid=row[0], video_uuid=row[1], frame_number=row[2], image_url=row[3], objects=[])
+          frames_dict[frame_uuid] = Frame(frame_uuid=row[0], video_uuid=row[1], frame_number=row[2], video_url=row[3], objects=[])
         if row[4] is not None :  # if there is an object
           obj = Object(type=row[4], confidence=row[6], x1=row[7], y1=row[8], x2=row[9], y2=row[10])
           frames_dict[frame_uuid].add_object(obj)
