@@ -5,6 +5,7 @@ class AnnotatedVideoPlayer {
     }
 
     play() {
+        this.frameQueue = [];
         const fps = 10; 
         const interval = 1000 / fps;
         var skippedFrames = 0;
@@ -113,9 +114,37 @@ video.addEventListener("play",function() { // Register event listener for when v
             predictObjects(base64Image)
             //console.log(base64Image); // Logs the Base64 string                    
         } else {
-            annotatedVideoPlayer.pause();
+	    console.log('paused');
+            window.annotatedVideoPlayer.pause();
             clearInterval(drawFrameInterval);
         }
     }, interval);
     window.annotatedVideoPlayer.play();
+});
+
+// Model File Change
+const modelFileInput = document.getElementById('modelFileInput');
+
+modelFileInput.addEventListener('change', () => {
+  const file = modelFileInput.files[0];
+
+  if (file) {
+    const formData = new FormData();
+    formData.append('modelFile', file);
+
+    fetch('/uploadModel', {
+      method: 'POST',
+      body: formData,
+    })
+    .then(response => {
+      if (response.ok) {
+        response.json().then(data => {alert(data['upload_status']);});
+      } else {
+        alert('File upload failed');
+      }
+    })
+    .catch(error => {
+      alert('Error uploading file:' + error);
+    });
+  }
 });
