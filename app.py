@@ -169,10 +169,12 @@ def get_video_list():
     conn.close()
     # Return Videos
     if res.response.status == 'success':
-        return jsonify(res.videos), 200
+        json_response = list()
+        for video in res.videos:
+            json_response.append({'title': video.title, 'video_uuid': video.video_uuid})
+        return jsonify(json_response), 200
     else:
-        return res.response.message, 500 
-    #return jsonify(list({'video_id': 'video1', 'name': 'Cool Video', 'num_frames': 10}, {'video_id': 'video2', 'name': 'Sad Video', 'num_frames': 35}, {'video_id': 'video3', 'name': 'Fun Video', 'num_frames': 1000}))
+        return res.response.message, 500
 
 @app.route('/models', methods=['GET']) # Get list of models available
 def get_model_list():
@@ -182,7 +184,10 @@ def get_model_list():
     conn.close()
     # Return Models
     if res.response.status == 'success':
-        return jsonify(res.models), 200
+        json_response = list()
+        for model in res.models:
+            json_response.append({'title': model.title, 'model_uuid': model.model_uuid})
+        return jsonify(json_response), 200
     else:
         return res.response.message, 500
     #return jsonify(list({'model_id': 'model1', 'name': 'Cool Model'}, {'model_id': 'model2', 'name': 'Fun Model'}, {'model_id': 'model3', 'name': 'Sad Model'}))
@@ -203,7 +208,7 @@ def get_all_processed_frames(model_id, video_id):
         conn, cursor = db_connect()
 
 
-@app.route('/models/<model_id>/<video_id>/<frame_id>', methods=['GET']) # Get specific processed frame
+@app.route('/models/<model_id>/<video_id>/<frame_num>', methods=['GET']) # Get specific processed frame
 def get_processed_frame(model_id, video_id, frame_id):
     conn, cursor = db_connect()
     res = get_frame_with_objects(conn, cursor, video_id, model_id, frame_id)

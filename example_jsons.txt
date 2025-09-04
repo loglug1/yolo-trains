@@ -1,31 +1,34 @@
 /videos
 [
     {
-        "name":"Cool Video",
-        "num_frames":10,
+        "title":"Cool Video",
         "video_id":"video1"
     },
-    {"name":"Sad Video","num_frames":35,"video_id":"video2"},
-    {"name":"Fun Video","num_frames":1000,"video_id":"video3"}
+    {
+        "title":"Sad Video","video_id":"video2"
+    },
+    {
+        "title":"Fun Video","video_id":"video3"
+    }
 ]
 
 /models
 [
     {
         "model_id": "model1",
-        "name": "Cool Model"
+        "title": "Cool Model"
     },
     {
         "model_id": "model2",
-        "name": "Fun Model"
+        "title": "Fun Model"
     },
     {
         "model_id": "model3",
-        "name": "Sad Model"
+        "title": "Sad Model"
     }
 ]
 
-/models/<model_id>/<video_id>/
+/models/<model_id>/<video_id>   // When using this endpoint, the frames do not return the images to save bandwidth
 {
     "connection_id":23457, // Only if processing is actively in progress
     "frames":
@@ -123,6 +126,7 @@
     ]
 }
 
+/models/<model_id>/<video_id>/<frame_num>
 {
     
 }
