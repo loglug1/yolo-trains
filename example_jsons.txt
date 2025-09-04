@@ -1,0 +1,128 @@
+/videos
+[
+    {
+        "name":"Cool Video",
+        "num_frames":10,
+        "video_id":"video1"
+    },
+    {"name":"Sad Video","num_frames":35,"video_id":"video2"},
+    {"name":"Fun Video","num_frames":1000,"video_id":"video3"}
+]
+
+/models
+[
+    {
+        "model_id": "model1",
+        "name": "Cool Model"
+    },
+    {
+        "model_id": "model2",
+        "name": "Fun Model"
+    },
+    {
+        "model_id": "model3",
+        "name": "Sad Model"
+    }
+]
+
+/models/<model_id>/<video_id>/
+{
+    "connection_id":23457, // Only if processing is actively in progress
+    "frames":
+    [ // Could be empty if there are no frames preprocessed
+        {
+            "frame_num": 0,
+            "objects":
+            [
+                {
+                    "type": "Deer",
+                    "x1": 5.6,
+                    "x2": 7.8,
+                    "y1": 4.8,
+                    "y2": 3.2,
+                    "confidence": 0.89
+                },
+                {
+                    "type": "Tree",
+                    "x1": 6,
+                    "x2": 8,
+                    "y1": 8,
+                    "y2": 2,
+                    "confidence": 0.84
+                },
+                {
+                    "type": "Train",
+                    "x1": 5,
+                    "x2": 7,
+                    "y1": 4,
+                    "y2": 3,
+                    "confidence": 0.78
+                },
+            ]
+        },
+        {
+            "frame_num": 1,
+            "objects":
+            [
+                {
+                    "type": "Deer",
+                    "x1": 5.6,
+                    "x2": 7.8,
+                    "y1": 4.8,
+                    "y2": 3.2,
+                    "confidence": 0.89
+                },
+                {
+                    "type": "Tree",
+                    "x1": 6,
+                    "x2": 8,
+                    "y1": 8,
+                    "y2": 2,
+                    "confidence": 0.84
+                },
+                {
+                    "type": "Train",
+                    "x1": 5,
+                    "x2": 7,
+                    "y1": 4,
+                    "y2": 3,
+                    "confidence": 0.78
+                },
+            ]
+        },
+        {
+            "frame_num": 2,
+            "objects":
+            [
+                {
+                    "type": "Deer",
+                    "x1": 5.6,
+                    "x2": 7.8,
+                    "y1": 4.8,
+                    "y2": 3.2,
+                    "confidence": 0.89
+                },
+                {
+                    "type": "Tree",
+                    "x1": 6,
+                    "x2": 8,
+                    "y1": 8,
+                    "y2": 2,
+                    "confidence": 0.84
+                },
+                {
+                    "type": "Train",
+                    "x1": 5,
+                    "x2": 7,
+                    "y1": 4,
+                    "y2": 3,
+                    "confidence": 0.78
+                },
+            ]
+        },
+    ]
+}
+
+{
+    
+}
