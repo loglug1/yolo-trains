@@ -175,4 +175,5 @@ cython_debug/
 
 .vscode
 
-test_videos/upload
+uploads
+testing.db
