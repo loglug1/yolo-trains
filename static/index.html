@@ -46,6 +46,27 @@
         </div>
         <div class="graph-wrapper">Graph
             <canvas id="tempScatterChart" width="640" height="360"></canvas>
+        <div class="controls-wrapper">
+            <div class="video-inputs">
+                <h3>Video Inputs</h3>
+                 <div class="file-input">
+                    <label for="videoInput">File Input</label>
+                    <input type="file" id="videoInput" accept="video/*" />
+                 </div>
+                 <div class="feed-capture">
+                    Feed Capture
+                 </div>
+            </div>
+            <div class="model-inputs">
+                <h3>Model Inputs</h3>
+                <div class="model-select">
+                    Model Select
+                </div>
+                <div class="model-input">
+                    <label for="modelFileInput">Model Input</label>
+                    <input type="file" id="modelFileInput" accept=".pt" />
+                </div>
+            </div>
         </div>
       </div>
       <div class="video-data-pane-wrapper">Data Pane</div>
