@@ -2,17 +2,10 @@ document.addEventListener("DOMContentLoaded", () => {
   const ctx = document.getElementById("tempScatterChart").getContext("2d");
 
   // Example temperature data (x = time, y = temperature)
-  const tempData = [
-    { x: 0, y: 22 },
-    { x: 1, y: 24 },
-    { x: 2, y: 23 },
-    { x: 3, y: 25 },
-    { x: 4, y: 26 },
-    { x: 5, y: 28 }
-  ];
+  const tempData = [];
 
   const tempScatterChart = new Chart(ctx, {
-    type: "scatter",
+    type: "line",
     data: {
       datasets: [
         {
@@ -48,4 +41,22 @@ document.addEventListener("DOMContentLoaded", () => {
     tempScatterChart.data.datasets[0].data.push({ x: time, y: temp });
     tempScatterChart.update();
   };
+
+  let counter = 1;
+  let intervalId;
+
+  function addDataPoints(){
+  intervalId = setInterval(() => {
+    tempData.push({ x: counter, y: Math.floor(Math.random() * 10) + 20 });
+    tempScatterChart.update();
+    counter++;
+    if (counter > 10000) {
+      clearInterval(intervalId); // stop after 10 points
+    }
+  }, 1000); // run every 10 seconds
+  }
+
+  // Attach event listener to button
+  document.getElementById("addDataBtn").addEventListener("click", addDataPoints);
+
 });
