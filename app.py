@@ -137,17 +137,17 @@ def upload_video():
         if res.status != 'success':
             return res.message, 409
         
-        # frame_counter = -1
-        # while True:
-        #     success, frame = cap.read()
-        #     if not success: # If getting next frame fails
-        #         break
-        #     frame_counter += 1
-        #     frame_id = str(uuid.uuid4())
-        #     frame_path = os.path.join(FRAME_LOCATION, secure_filename(frame_id + '.jpeg'))
-        #     cv2.imwrite(frame_path, frame)
-        #     insert_frame(conn, cursor, frame_id, video_id, frame_counter, frame_path)
-        # cap.release()
+        frame_counter = -1
+        while True:
+            success, frame = cap.read()
+            if not success: # If getting next frame fails
+                break
+            frame_counter += 1
+            frame_id = str(uuid.uuid4())
+            insert_frame(conn, cursor, frame_id, video_id, frame_counter)
+        cap.release()
+        conn.close()
+        print(frame_counter)
 
         # Return video info
         return {'video_id': video_id, 'name': name, 'num_frames': num_frames}, 201
@@ -208,14 +208,14 @@ def get_all_processed_frames(model_id, video_id):
         conn, cursor = db_connect()
 
 
-@app.route('/models/<model_id>/<video_id>/<frame_num>', methods=['GET']) # Get specific processed frame
-def get_processed_frame(model_id, video_id, frame_id):
+@app.route('/models/<model_id>/<video_id>/<int:frame_num>', methods=['GET']) # Get specific processed frame
+def get_processed_frame(model_id, video_id, frame_num):
     conn, cursor = db_connect()
-    res = get_frame_with_objects(conn, cursor, video_id, model_id, frame_id)
+    res = get_frame_with_objects(conn, cursor, video_id, model_id, frame_num)
     if res.response.status == 'error' or res.frame.objects[0].type == 'none':
         return
     conn.close()
-    process_single_frame(model_id, video_id, frame_id)
+    process_single_frame(model_id, video_id, frame_num)
 
 # ======================================== Background Thread Functions ==========================================
 
