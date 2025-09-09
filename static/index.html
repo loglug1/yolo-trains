@@ -29,14 +29,24 @@
               <label for="videoInput">File Input</label>
               <input type="file" id="videoInput" accept="video/*" />
             </div>
+            <select id="videoDropdown">
+              <option value="">Select Video</option>
+              <option value="placeholder_video1.mp4">Placeholder Video 1</option>
+              <option value="placeholder_video2.mp4">Placeholder Video 2</option>
+            </select>
           </div>
           <div class="model-inputs">
             <h3>Model Inputs</h3>
             <div class="model-input">Model File Input</div>
+            <select id="modelDropdown">
+              <option value="">Select Model</option>
+              <option value="placeholder_model1.pt">Placeholder Model 1</option>
+              <option value="placeholder_model2.pt">Placeholder Model 2</option>
+            </select>
           </div>
         </div>
         <div class="graph-controls-wrapper">
-          <button id="addDataBtn">Click Me</button>
+          <button id="graphBtn">Generate Graph</button>
         </div>
       </div>
       <div class="middle-panel-wrapper">
