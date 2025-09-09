@@ -49,7 +49,7 @@ def create_tables(conn, cursor) -> Response :
         id INTEGER PRIMARY KEY AUTOINCREMENT,
         frame_uuid REFERENCES frames(frame_uuid),
         model_uuid REFERENCES models(model_uuid),
-        CONSTRAINT unique_object UNIQUE (frame_uuid, model_uuid)
+        CONSTRAINT unique_frame UNIQUE (frame_uuid, model_uuid)
       );
     """,
 
@@ -263,12 +263,14 @@ def get_model(conn, cursor, model_uuid: str) -> ModelResponse :
 # QUERY PROCESSED-FRAMES FUNCTIONS
 # classes
 class ProcessedFrame:
-  def __init__(self, frame_uuid: str, model_uuid: str) :
+  def __init__(self, frame_uuid: str, video_uuid: str, model_uuid: str, frame_number: int) :
     self.frame_uuid = frame_uuid
+    self.video_uuid = video_uuid
     self.model_uuid = model_uuid
+    self.frame_number = frame_number
 
   def __str__(self):
-    return f"Frame: {self.frame_uuid} Model: {self.model_uuid}"
+    return f"Frame: {self.frame_uuid} Video: {self.video_uuid} Model: {self.model_uuid} Number: {self.frame_number}"
   
 class ProcessedFrameResponse:
   def __init__(self, response: Response, processed_frame: ProcessedFrame) :
@@ -278,19 +280,55 @@ class ProcessedFrameResponse:
   def __str__(self):
     return str(self.response) + (f"\n{self.processed_frame}" if self.processed_frame else "")
   
+class ProcessedFrameListResponse:
+  def __init__(self, response: Response, processed_frames: list[ProcessedFrame]):
+    self.response = response
+    self.processed_frames = processed_frames
+
+  def __str__(self):
+    return str(self.response) + ("\n" + "\n".join([str(frame) for frame in self.processed_frames]) if self.processed_frames else "")
+  
 # definitions 
-def get_processed_frame(conn, cursor, frame_uuid: str, model_uuid: str) -> ProcessedFrameResponse :
-  try :
-    cursor.execute("SELECT frame_uuid, model_uuid FROM processed_frames WHERE frame_uuid = ? AND model_uuid = ?", (frame_uuid, model_uuid))
+def get_processed_frame(conn, cursor, video_uuid: str, model_uuid: str, frame_number: int) -> ProcessedFrameResponse :
+  try : 
+    cursor.execute("""
+      SELECT f.frame_uuid, f.video_uuid, pf.model_uuid, f.frame_number
+      FROM frames f
+      LEFT JOIN processed_frames pf ON f.frame_uuid = pf.frame_uuid
+      WHERE f.video_uuid = ? AND f.frame_number = ? AND pf.model_uuid = ? 
+    """, (video_uuid, frame_number, model_uuid))
     row = cursor.fetchone()
     if row :
-      processed_frame = ProcessedFrame(frame_uuid=row[0], model_uuid=row[1])
-      return ProcessedFrameResponse(Response("success", f"Processed frame for frame {frame_uuid} and model {model_uuid} successfully found."), processed_frame)
+      processed_frame = ProcessedFrame(frame_uuid=row[0], video_uuid=row[1], model_uuid=row[2], frame_number=row[3])
+      return ProcessedFrameResponse(Response("success", f"Processed frame for {video_uuid}, model {model_uuid}, and {frame_number} successfully found."), processed_frame)
     else :
-      return ProcessedFrameResponse(Response("error", f"Processed frame for frame {frame_uuid} and model {model_uuid} not found."), None)
+      return ProcessedFrameResponse(Response("error", f"Processed frame for {video_uuid}, model {model_uuid}, and {frame_number} not found."), None)
     
   except Exception as e :
     return ProcessedFrameResponse(Response("error", f"Get processed frame failed: {str(e)}"), None)
+  
+def get_processed_frame_list(conn, cursor, video_uuid: str, model_uuid: str) -> ProcessedFrameListResponse :
+  try : 
+    cursor.execute("""
+      SELECT f.frame_uuid, f.video_uuid, pf.model_uuid, f.frame_number
+      FROM frames f
+      LEFT JOIN processed_frames pf ON f.frame_uuid = pf.frame_uuid
+      WHERE f.video_uuid = ? AND pf.model_uuid = ? 
+    """, (video_uuid, model_uuid))
+    rows = cursor.fetchall()
+    if rows :
+      frames_dict = {}
+      for row in rows:
+        frame_uuid = row[0]
+        if frame_uuid not in frames_dict :
+          frames_dict[frame_uuid] = ProcessedFrame(frame_uuid=row[0], video_uuid=row[1], model_uuid=row[2], frame_number=row[3])
+        frames = list(frames_dict.values())
+      return ProcessedFrameListResponse(Response("success", f"Frames of video {video_uuid} and model {model_uuid} fetched successfully."), frames)
+    else :
+      return ProcessedFrameListResponse(Response("error", f"No frames found for video {video_uuid} and model {model_uuid}."), [])
+    
+  except Exception as e :
+    return ProcessedFrameListResponse(Response("error", f"Get frames failed: {str(e)}"), [])
 
 
 # QUERY OBJECT-TYPES FUNCTIONS
@@ -456,7 +494,6 @@ def get_frame_list(conn, cursor, video_uuid: str) -> FrameListResponse :
         if frame_uuid not in frames_dict :
           frames_dict[frame_uuid] = Frame(frame_uuid=row[0], video_uuid=row[1], frame_number=row[2], objects={})
         frames = list(frames_dict.values())
-        #return FrameListResponse(Response("success"))
       return FrameListResponse(Response("success", f"Frames of video {video_uuid} fetched successfully."), video_url, frames)
     else :
       return FrameListResponse(Response("error", f"No frames found for video {video_uuid}."), None, [])
