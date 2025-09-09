@@ -35,7 +35,7 @@ def main():
         if out.isOpened() == False:
             raise Exception("Error writing to output file!")
     
-    yolo = Yolo11s("ai_modules/ob_detect_models/custom/customModel.pt")
+    yolo = Yolo11s("ai_modules/ob_detect_models/yolo11s.pt")
 
     while(cap.isOpened()):
         ret, frame = cap.read()
@@ -61,8 +61,8 @@ def main():
 
         # frame_num = cap.get(cv2.CAP_PROP_POS_FRAMES)
         # print(f'OBJECTS IN FRAME #{frame_num}:')
-        # print(yolo.get_boxes_json())
-        print(processed_frame.dtype)
+        print(yolo.get_boxes_json())
+        # print(processed_frame.dtype)
 
     cap.release()
     if args.file_out != None:

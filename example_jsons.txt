@@ -1,4 +1,4 @@
-/videos
+/videos GET
 [
     {
         "title":"Cool Video",
@@ -12,7 +12,7 @@
     }
 ]
 
-/models
+/models GET
 [
     {
         "model_id": "model1",
@@ -28,13 +28,14 @@
     }
 ]
 
-/models/<model_id>/<video_id>   // When using this endpoint, the frames do not return the images to save bandwidth
+/models/<model_id>/<video_id> GET   // When using this endpoint, the frames do not return the images to save bandwidth
 {
-    "connection_id":23457, // Only if processing is actively in progress
-    "frames":
-    [ // Could be empty if there are no frames preprocessed
+    "connection_id": "connection-id", // Only if processing is actively in progress
+    "num_frames": 215,
+    "frames": // Could be empty if there are no frames preprocessed
+    [
         {
-            "frame_num": 0,
+            "frame_number": 0,
             "objects":
             [
                 {
@@ -64,7 +65,7 @@
             ]
         },
         {
-            "frame_num": 1,
+            "frame_number": 1,
             "objects":
             [
                 {
@@ -94,7 +95,7 @@
             ]
         },
         {
-            "frame_num": 2,
+            "frame_number": 2,
             "objects":
             [
                 {
@@ -126,7 +127,69 @@
     ]
 }
 
-/models/<model_id>/<video_id>/<frame_num>
+/models/<model_id>/<video_id>/<frame_number> GET
 {
-    
+    "frame_number": 0,
+    "image": "data:image/webp;base64,cqkLYWGFnmwVpHbjOCXYX0gkrfc5btbZS32AAAA", // This will be HUGE
+    "objects":
+    [
+        {
+            "type": "Deer",
+            "x1": 5.6,
+            "x2": 7.8,
+            "y1": 4.8,
+            "y2": 3.2,
+            "confidence": 0.89
+        },
+        {
+            "type": "Tree",
+            "x1": 6,
+            "x2": 8,
+            "y1": 8,
+            "y2": 2,
+            "confidence": 0.84
+        },
+        {
+            "type": "Train",
+            "x1": 5,
+            "x2": 7,
+            "y1": 4,
+            "y2": 3,
+            "confidence": 0.78
+        },
+    ]
 }
+
+processed_frame SocketIO event
+{
+    "frame_number": 0,
+    "image": "data:image/webp;base64,cqkLYWGFnmwVpHbjOCXYX0gkrfc5btbZS32AAAA", // This will be HUGE
+    "objects":
+    [
+        {
+            "type": "Deer",
+            "x1": 5.6,
+            "x2": 7.8,
+            "y1": 4.8,
+            "y2": 3.2,
+            "confidence": 0.89
+        },
+        {
+            "type": "Tree",
+            "x1": 6,
+            "x2": 8,
+            "y1": 8,
+            "y2": 2,
+            "confidence": 0.84
+        },
+        {
+            "type": "Train",
+            "x1": 5,
+            "x2": 7,
+            "y1": 4,
+            "y2": 3,
+            "confidence": 0.78
+        },
+    ]
+}
+
