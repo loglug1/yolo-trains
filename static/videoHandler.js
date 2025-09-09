@@ -1,4 +1,4 @@
-import {Video, Model, Frame, Object} from './Classes'
+import { Video, Model, Frame, DetectionObject } from './Classes.js';
 
 //HTTP GET request for all videos and models
 

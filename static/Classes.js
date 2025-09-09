@@ -19,7 +19,7 @@ export class Frame {
     }
 }
 
-export class Object {
+export class DetectionObject {
     constructor(object_type, x1, x2, y1, y2, confidence) {
         this.object_type = object_type;
         this.label = label;

@@ -4,13 +4,9 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <link rel="stylesheet" href="indexStyleSheet.css" />
-    <script
-      src="https://cdn.socket.io/4.8.1/socket.io.min.js"
-      integrity="sha384-mkQ3/7FUtcGyoppY6bz/PORYoGqOl7/aSUMn2ymDOJcapfS6PHqxhRTMh1RR0Q6+"
-      crossorigin="anonymous"
-    ></script>
+    <script src="https://cdn.socket.io/4.8.1/socket.io.min.js" integrity="sha384-mkQ3/7FUtcGyoppY6bz/PORYoGqOl7/aSUMn2ymDOJcapfS6PHqxhRTMh1RR0Q6+" crossorigin="anonymous"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-    <script src="graphHandler.js" defer></script>
+
     <title>Train AI Tester</title>
   </head>
   <body>
@@ -46,7 +42,7 @@
           </div>
         </div>
         <div class="graph-controls-wrapper">
-          <button id="graphBtn">Generate Graph</button>
+          <button id="addDataBtn">Generate Graph</button>
         </div>
       </div>
       <div class="middle-panel-wrapper">
@@ -61,6 +57,7 @@
       <div class="video-data-pane-wrapper">Data Pane</div>
     
     </div>
-    <script src="videoHandler.js"></script>
+      <!-- <script type="module" src="videoHandler.js"></script> -->
+      <script type="module" src="graphHandler.js"></script>
   </body>
 </html>

@@ -1,4 +1,4 @@
-import {Video, Model, Frame, Object} from './Classes'
+import { Video, Model, Frame, DetectionObject } from './Classes.js';
 
 document.addEventListener("DOMContentLoaded", () => {
   const ctx = document.getElementById("tempScatterChart").getContext("2d");
