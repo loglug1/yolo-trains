@@ -12,6 +12,11 @@
     }
 ]
 
+/videos POST video_file=file
+{
+    "title":"Fun Video","video_id":"video3"
+}
+
 /models GET
 [
     {
@@ -27,6 +32,12 @@
         "title": "Sad Model"
     }
 ]
+
+/videos POST model_file=file
+{
+    "model_id": "model3",
+    "title": "Sad Model"
+}
 
 /models/<model_id>/<video_id> GET   // When using this endpoint, the frames do not return the images to save bandwidth
 {
