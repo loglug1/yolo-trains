@@ -5,7 +5,7 @@ import os
 from flask_socketio import SocketIO, send, emit, join_room
 from ai_modules.yolo11s import Yolo11s
 from utilities.base64_transcoder import Base64_Transcoder
-from db_connect.database import Videos, Frame, Object, get_frame_with_objects, get_video_list as db_get_video_list, get_model_list as db_get_model_list, insert_frame, insert_video, create_tables, insert_model, get_video, get_frame_list, get_frame_list_with_objects, get_model, insert_object, insert_object_type, get_processed_frame as db_get_processed_frame, insert_processed_frame
+from db_connect.database import Videos, Frame, Object, get_frame_with_objects, get_video_list as db_get_video_list, get_model_list as db_get_model_list, insert_frame, insert_video, create_tables, insert_model, get_video, get_frame_list, get_frame_list_with_objects, get_model, insert_object, insert_object_type, get_processed_frame as db_get_processed_frame, insert_processed_frame, get_frame
 import sqlite3
 import argparse
 import uuid
@@ -312,11 +312,17 @@ def get_raw_frame(video_id, frame_num):
 @app.route('/models/<model_id>/<video_id>/<int:frame_num>', methods=['GET'])
 def get_processed_frame(model_id, video_id, frame_num):
     conn, cursor = db_connect()
+    print("Get with objects")
     res = get_frame_with_objects(conn, cursor, video_id, model_id, frame_num)
-    if res.response.status == 'error' or res.frame.objects[0].type == 'none':
-        return
+    if res.response.status != 'success':
+        return res.response.message, 500
+    frame = res.frame
+    print("Get processed frame")
+    res = db_get_processed_frame(conn, cursor, res.frame.frame_uuid, model_id)
     conn.close()
-    process_single_frame(model_id, video_id, frame_num)
+    if res.response.status != 'success':
+        return process_single_frame(model_id, video_id, frame), 200
+    return frame.to_dict(), 200
 
 # ======================================== Background Thread Functions ==========================================
 
@@ -351,16 +357,16 @@ def _process_all_frames(model_id: str, video: Videos, frames: list[Frame], task_
             if res != 'success':
                 continue
             scrubbed_objects.append({'type': object['name'], 'confidence':object['confidence'], 'x1': object['x1'], 'y1': object['y1'], 'x2': object['x2'], 'y2': object['y2']})
-        socketio.send(json.dumps({'frame_number': frame.frame_number, 'image': processed_data_url, 'objects': scrubbed_objects}), to=task_id)
         # Mark Frame as Processed
         insert_processed_frame(conn, cursor, frame.frame_uuid, model_id)
+        socketio.send(json.dumps({'frame_number': frame.frame_number, 'image': processed_data_url, 'objects': scrubbed_objects}), to=task_id)
     # Mark as Complete
     with threading.Lock():
         tasks.remove(task_id)
     conn.close()
 
-
-def process_single_frame(model_id, video_id, frame_num):
+# Make this not fetch the metadata and just have the previous function use it to share the code
+def process_single_frame(model_id, video_id, frame: Frame):
     # Get Model Metadata
     conn, cursor = db_connect()
     res = get_model(conn, cursor, model_id)
@@ -393,13 +399,10 @@ def process_single_frame(model_id, video_id, frame_num):
         if res != 'success':
             continue
         scrubbed_objects.append({'type': object['name'], 'confidence':object['confidence'], 'x1': object['x1'], 'y1': object['y1'], 'x2': object['x2'], 'y2': object['y2']})
-    socketio.send(json.dumps({'frame_number': frame.frame_number, 'image': processed_data_url, 'objects': scrubbed_objects}), to=task_id)
     # Mark Frame as Processed
     insert_processed_frame(conn, cursor, frame.frame_uuid, model_id)
-    # Mark as Complete
-    with threading.Lock():
-        tasks.remove(task_id)
-    conn.close()
+    return {'frame_number': frame.frame_number, 'image': processed_data_url, 'objects': scrubbed_objects}
+
 
 
 # ====================================== SocketIO Event Handlers ==============================================
