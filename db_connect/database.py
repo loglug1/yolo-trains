@@ -414,6 +414,10 @@ class Frame:
   def add_object(self, object: Object):
     self.objects.append(object)
 
+  def to_dict(self) -> dict:
+    frame_dict = {'frame_num': self.frame_number, 'objects': [o.__dict__ for o in self.objects]}
+    return frame_dict
+
 class FrameResponse:
   def __init__(self, response: Response, video_url: str | None, frame: Frame | None):
     self.response = response
@@ -481,7 +485,7 @@ def get_frame_list(conn, cursor, video_uuid: str) -> FrameListResponse :
   try :
     cursor.execute("SELECT video_url FROM videos WHERE video_uuid = ?", (video_uuid,))
     video_url = cursor.fetchone()
-    cursor.execute("""SELECT frame_uuid, video_uuid, frame_number FROM frames WHERE video_uuid = ? ORDER BY frame_number ASC""", (video_uuid))
+    cursor.execute("""SELECT frame_uuid, video_uuid, frame_number FROM frames WHERE video_uuid = ? ORDER BY frame_number ASC""", (video_uuid, ))
     rows = cursor.fetchall()
     if rows :
       frames_dict = {}
@@ -511,7 +515,7 @@ def get_frame_list_with_objects(conn, cursor, video_uuid: str, model_uuid: str) 
         ON o.type = ot.type
       WHERE f.video_uuid = ?
       ORDER BY f.frame_number ASC
-    """, (video_uuid, model_uuid))
+    """, (model_uuid, video_uuid))
     rows = cursor.fetchall()
     if rows :
       frames_dict = {}

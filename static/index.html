@@ -1,42 +1,56 @@
 <!DOCTYPE html>
 <html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <link rel="stylesheet" href="indexStyleSheet.css">
-    <script src="https://cdn.socket.io/4.8.1/socket.io.min.js" integrity="sha384-mkQ3/7FUtcGyoppY6bz/PORYoGqOl7/aSUMn2ymDOJcapfS6PHqxhRTMh1RR0Q6+" crossorigin="anonymous"></script>
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <link rel="stylesheet" href="indexStyleSheet.css" />
+    <script
+      src="https://cdn.socket.io/4.8.1/socket.io.min.js"
+      integrity="sha384-mkQ3/7FUtcGyoppY6bz/PORYoGqOl7/aSUMn2ymDOJcapfS6PHqxhRTMh1RR0Q6+"
+      crossorigin="anonymous"
+    ></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="graphHandler.js" defer></script>
     <title>Train AI Tester</title>
-</head>
-<body>
+  </head>
+  <body>
     <div class="content-wrapper">
-        <canvas id="hiddenSourceCanvas" width="640" height="360" style="display: none;"></canvas>
+      <canvas
+        id="hiddenSourceCanvas"
+        width="640"
+        height="360"
+        style="display: none"
+      ></canvas>
+      <div class="left-side-panel-wrapper">
+        <div class="video-controls-wrapper">
+          <div class="video-inputs">
+            <h3>Video Inputs</h3>
+            <div class="file-input">
+              <label for="videoInput">File Input</label>
+              <input type="file" id="videoInput" accept="video/*" />
+            </div>
+          </div>
+          <div class="model-inputs">
+            <h3>Model Inputs</h3>
+            <div class="model-input">Model File Input</div>
+          </div>
+        </div>
+        <div class="graph-controls-wrapper">
+          <button id="addDataBtn">Click Me</button>
+        </div>
+      </div>
+      <div class="middle-panel-wrapper">
         <div class="video-wrapper">
             <video id="videoPreview" width="640" height="360" controls></video>
             <img id="frame" />
         </div>
-        <div class="controls-wrapper">
-            <div class="video-inputs">
-                <h3>Video Inputs</h3>
-                 <div class="file-input">
-                    <label for="videoInput">File Input</label>
-                    <input type="file" id="videoInput" accept="video/*" />
-                 </div>
-                 <div class="feed-capture">
-                    Feed Capture
-                 </div>
-            </div>
-            <div class="model-inputs">
-                <h3>Model Inputs</h3>
-                <div class="model-select">
-                    Model Select
-                </div>
-                <div class="model-input">
-                    <label for="modelFileInput">Model Input</label>
-                    <input type="file" id="modelFileInput" accept=".pt" />
-                </div>
-            </div>
+        <div class="graph-wrapper">
+            <canvas id="tempScatterChart" width="640" height="360"></canvas>
         </div>
+      </div>
+      <div class="video-data-pane-wrapper">Data Pane</div>
+    
     </div>
     <script src="videoHandler.js"></script>
-</body>
+  </body>
 </html>

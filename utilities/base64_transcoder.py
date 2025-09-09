@@ -18,7 +18,7 @@ class Base64_Transcoder():
     # Converts image encoded as base64 to numpy image array
     @staticmethod
     def base64_to_nparray(base64_image: str) -> np.ndarray :
-        return np.array(Image.open(io.BytesIO(base64.b64decode(base64_image))))#[:, :, ::-1] # The additional array shift at the end is to swap the blue and red channels. It still needs further testing.
+        return np.array(Image.open(io.BytesIO(base64.b64decode(base64_image))))#[:, :, ::-1] # This extra array magic could be used to swap the Red and Blue color channels? Just use cv2.cvtColor(image, cv2.COLOR_BGR2RGB) from now on.
     
     # Converts numpy image array to webp image encoded as base64
     @staticmethod
