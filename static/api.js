@@ -1,3 +1,7 @@
+import { Video, Model,Frame,DetectionObject } from "./Classes.js";
+
+//=====POST=========================================================================
+
 //HTTP POST request uploading video
 export async function postVideo(video){
     try {
@@ -5,13 +9,13 @@ export async function postVideo(video){
         //Must match Falsk's request.files['video_file']
         formData.append("video_file",video);
 
-        const response = await fetch("http://127.0.0.1:5000/videos", {
+        const response = await fetch("/videos", {
             method: "POST",
             body: formData
         });
 
         if (!response.ok) {
-            throw new Error('Upload failed: ${response.status');
+            throw new Error(`Upload failed: ${response.status}`);
         }
 
         const result = await response.json();
@@ -24,6 +28,28 @@ export async function postVideo(video){
 
 //HTTP POST request uploading models .pt files
 
-//HTTP GET request for /models/model_id/video_id to populating the graph
+//=====GET======================================================================
 
-//HTTP GET request for all videos and models
+export async function fetchVideos() {
+    try {
+        const response = await fetch('/videos', { method: 'GET' });
+
+        if (!response.ok) {
+            throw new Error(`HTTP error! Status: ${response.status}`);
+        }
+
+        // Parse the JSON response
+        const data = await response.json();
+
+        // Convert each item into a Video object
+        videos = data.map(video => new Video(video.title, video.video_id));
+
+        console.log(videos);
+        return videos;
+
+    } catch (error) {
+        console.error('Error fetching videos:', error);
+    }
+}
+
+//HTTP GET request for /models/model_id/video_id to populating the graph
