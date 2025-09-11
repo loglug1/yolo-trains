@@ -6,7 +6,8 @@
     <link rel="stylesheet" href="indexStyleSheet.css" />
     <script src="https://cdn.socket.io/4.8.1/socket.io.min.js" integrity="sha384-mkQ3/7FUtcGyoppY6bz/PORYoGqOl7/aSUMn2ymDOJcapfS6PHqxhRTMh1RR0Q6+" crossorigin="anonymous"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-
+    <script type="module" src="dropDownHandler.js" defer></script>
+    
     <title>Train AI Tester</title>
   </head>
   <body>
@@ -27,9 +28,8 @@
               <button id="uploadBtn">Upload</button>
             </div>
             <select id="videoDropdown">
-              <option value="">Select Video</option>
-              <option value="placeholder_video1.mp4">Placeholder Video 1</option>
-              <option value="placeholder_video2.mp4">Placeholder Video 2</option>
+              <label for="videoDropdown">Select video:</label>
+              <select id="videoDropdown"></select>
             </select>
           </div>
           <div class="model-inputs">
