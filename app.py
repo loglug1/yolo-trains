@@ -317,8 +317,7 @@ def get_processed_frame(model_id, video_id, frame_num):
     if res.response.status != 'success':
         return res.response.message, 500
     frame = res.frame
-    print("Get processed frame")
-    res = db_get_processed_frame(conn, cursor, res.frame.frame_uuid, model_id)
+    res = db_get_processed_frame(conn, cursor, video_id, model_id, frame.frame_number)
     conn.close()
     if res.response.status != 'success':
         return process_single_frame(model_id, video_id, frame), 200
