@@ -42,13 +42,15 @@ export async function fetchVideos() {
         const data = await response.json();
 
         // Convert each item into a Video object
-        videos = data.map(video => new Video(video.title, video.video_id));
+        let videos = data.map(video => new Video(video.title, video.video_id));
 
         console.log(videos);
         return videos;
 
     } catch (error) {
         console.error('Error fetching videos:', error);
+        //ensure its iterable
+        return[];
     }
 }
 

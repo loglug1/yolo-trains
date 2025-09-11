@@ -1,5 +1,5 @@
 import { Video, Model, Frame, DetectionObject } from './Classes.js';
-import { postVideo } from './api.js';
+import { postVideo, fetchVideos } from './api.js';
 
 
 
@@ -21,9 +21,9 @@ import { postVideo } from './api.js';
 //     window.annotatedVideoPlayer.queueFrame(dataURL);
 // });
 
-function predictObjects(dataUrl) {
-    socket.emit("predict_objects", dataUrl);
-}
+// function predictObjects(dataUrl) {
+//     socket.emit("predict_objects", dataUrl);
+// }
 
 // Video File Change
 async function uploadVideo(){
@@ -36,6 +36,7 @@ async function uploadVideo(){
   const file = fileInput.files[0];
   const result = await postVideo(file);
   console.log("Server response:", result);
+  populateDropdown();
 }
 
 document.getElementById("uploadBtn").addEventListener("click",uploadVideo);
@@ -66,31 +67,31 @@ document.getElementById("uploadBtn").addEventListener("click",uploadVideo);
 //     });
 //   }
 // });
-let videos = [];
 
-export async function fetchVideos() {
-    try {
-        const response = await fetch('/videos', { method: 'GET' });
+// export async function fetchVideos() {
+//     try {
+//         const response = await fetch('/videos', { method: 'GET' });
 
-        if (!response.ok) {
-            throw new Error(`HTTP error! Status: ${response.status}`);
-        }
+//         if (!response.ok) {
+//             throw new Error(`HTTP error! Status: ${response.status}`);
+//         }
 
-        // Parse the JSON response
-        const data = await response.json();
+//         // Parse the JSON response
+//         const data = await response.json();
 
-        // Convert each item into a Video object
-        videos = data.map(video => new Video(video.title, video.video_id));
+//         // Convert each item into a Video object
+//         videos = data.map(video => new Video(video.title, video.video_id));
 
-        // Populate the dropdown
-        populateDropdown(videos);
+//         // Populate the dropdown
+//         populateDropdown(videos);
 
-    } catch (error) {
-        console.error('Error fetching videos:', error);
-    }
-}
+//     } catch (error) {
+//         console.error('Error fetching videos:', error);
+//     }
+// }
 
-function populateDropdown(videoArray) {
+async function populateDropdown() {
+    let videoArray = await fetchVideos();
     const dropdown = document.getElementById('videoDropdown');
 
     // Clear any existing options
@@ -112,4 +113,4 @@ function populateDropdown(videoArray) {
 }
 
 // Initialize on page load
-document.addEventListener('DOMContentLoaded', fetchVideos);
+document.addEventListener('DOMContentLoaded', populateDropdown);
