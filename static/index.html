@@ -6,8 +6,8 @@
     <link rel="stylesheet" href="indexStyleSheet.css" />
     <script src="https://cdn.socket.io/4.8.1/socket.io.min.js" integrity="sha384-mkQ3/7FUtcGyoppY6bz/PORYoGqOl7/aSUMn2ymDOJcapfS6PHqxhRTMh1RR0Q6+" crossorigin="anonymous"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-    <script type="module" src="dropDownHandler.js" defer></script>
-    
+    <script type="module" src="videoHandler.js"></script>
+    <script type="module" src="graphHandler.js"></script>
     <title>Train AI Tester</title>
   </head>
   <body>
@@ -29,7 +29,6 @@
             </div>
             <select id="videoDropdown">
               <label for="videoDropdown">Select video:</label>
-              <select id="videoDropdown"></select>
             </select>
           </div>
           <div class="model-inputs">
@@ -58,7 +57,5 @@
       <div class="video-data-pane-wrapper">Data Pane</div>
     
     </div>
-      <script type="module" src="videoHandler.js"></script>
-      <script type="module" src="graphHandler.js"></script>
   </body>
 </html>

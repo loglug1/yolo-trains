@@ -84,10 +84,16 @@ html{
 }
 
 .file-input{
-    border: 2px solid black;
-    padding: 10px;
     label{
-        padding: 10px 50px;
+        padding: 10px 10px;
+        background-color: #007bff;
+        color: white;
+        border-radius: 5px;
+        cursor: pointer;
+        display: inline-block;
+    }
+    button{
+        padding: 10px 10px;
         background-color: #007bff;
         color: white;
         border-radius: 5px;
