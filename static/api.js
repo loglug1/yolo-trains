@@ -54,4 +54,25 @@ export async function fetchVideos() {
     }
 }
 
+export async function fetchModels() {
+    try {
+        const response = await fetch('/models', { method: 'GET' });
+        if (!response.ok) {
+            throw new Error(`HTTP error! Status: ${response.status}`);
+        }
+
+        // Parse the JSON response
+        const data = await response.json();
+
+        // Convert each item into a Video object
+        let models = data.map(model => new Model(model.model_title, model.model_id));
+
+        return models;
+
+    } catch (error) {
+        console.error('Error fetching models:', error);
+        return [];
+    }
+}
+
 //HTTP GET request for /models/model_id/video_id to populating the graph

@@ -1,5 +1,5 @@
 import { Video, Model, Frame, DetectionObject } from './Classes.js';
-import { postVideo, fetchVideos } from './api.js';
+import { postVideo, fetchVideos, fetchModels } from './api.js';
 
 
 
@@ -90,7 +90,7 @@ document.getElementById("uploadBtn").addEventListener("click",uploadVideo);
 //     }
 // }
 
-async function populateDropdown() {
+async function populateVideoDropdown() {
     let videoArray = await fetchVideos();
     const dropdown = document.getElementById('videoDropdown');
 
@@ -112,5 +112,28 @@ async function populateDropdown() {
     });
 }
 
+async function populateModelDropdown() {
+    let modelArray = await fetchModels();
+    const dropdown = document.getElementById('modelDropdown');
+
+    // Clear any existing options
+    dropdown.innerHTML = '';
+
+    // Add a default placeholder option
+    const defaultOption = document.createElement('option');
+    defaultOption.text = 'Select a model';
+    defaultOption.value = '';
+    dropdown.add(defaultOption);
+
+    // Add video options where both value and text are the title
+    modelArray.forEach(model => {
+        const option = document.createElement('option');
+        option.text = model.model_title;    // Displayed text
+        option.value = model.model_title;   
+        dropdown.add(option);
+    });
+}
+
 // Initialize on page load
-document.addEventListener('DOMContentLoaded', populateDropdown);
+document.addEventListener('DOMContentLoaded', populateVideoDropdown);
+document.addEventListener('DOMContentLoaded', populateModelDropdown);
