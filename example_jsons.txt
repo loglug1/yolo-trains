@@ -14,7 +14,16 @@
 
 /videos POST video_file=file
 {
-    "title":"Fun Video","video_id":"video3"
+    "title":"Fun Video",
+    "video_id":"video3",
+    "num_frames":200
+}
+
+/videos/<video_id> GET
+{
+    "title":"Cool Video",
+    "video_id":"video1",
+    "num_frames":200
 }
 
 /models GET
@@ -33,7 +42,7 @@
     }
 ]
 
-/videos POST model_file=file
+/models POST model_file=file
 {
     "model_id": "model3",
     "title": "Sad Model"
