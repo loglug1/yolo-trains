@@ -20,7 +20,7 @@ frame_uuid = "123e4567-e89b-12d3-a456-4266141740w1"
 frame_uuid2 = "123e4567-e89b-12d3-a456-4266141740w2"
 
 # test inserts and queries
-print(insert_object_type(conn, cursor, 1, "person"))
+print(insert_object_type(conn, cursor, model_uuid, 1, "person"))
 
 print(insert_video(conn, cursor, video_uuid, "Sample Video", "https://video.com"))
 print(insert_model(conn, cursor, model_uuid, "Sample Model", "https://model.com"))

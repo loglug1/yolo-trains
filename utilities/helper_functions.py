@@ -1,5 +1,8 @@
+from db_connect.database import ProcessedFrame
+from ultralytics.utils.plotting import colors
 import sqlite3
 import hashlib
+import numpy
 import cv2
 import os
 
@@ -41,3 +44,19 @@ def get_basename(filename):
 def create_folder_when_missing(path):
     if not os.path.exists(path):
         os.makedirs(path)
+
+# Function to draw objects onto frame
+def get_annotated_frame(processed_frame: ProcessedFrame, frame_img: numpy.ndarray) :
+    if processed_frame.objects is None :
+        return frame_img
+    
+    updated_frame = frame_img
+        
+    for obj in processed_frame.objects :
+        tl_pt = (round(obj.x1), round(obj.y1))
+        br_pt = (round(obj.x2), round(obj.y2))
+        bc = colors(obj.class_id if obj.class_id is not None else 0, bgr=True)
+
+        updated_frame = cv2.rectangle(updated_frame, tl_pt, br_pt, bc, 2)
+    
+    return updated_frame

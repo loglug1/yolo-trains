@@ -6,7 +6,7 @@ from flask_socketio import SocketIO, send, emit, join_room
 from ai_modules.abc_model import ObjectDetectionModel
 from ai_modules.yolo11s import Yolo11s
 from utilities.base64_transcoder import Base64_Transcoder
-from utilities.helper_functions import db_connect, get_sha256, get_num_frames, get_basename, get_frame_from_file, validate_extension, create_folder_when_missing
+from utilities.helper_functions import db_connect, get_sha256, get_num_frames, get_basename, get_frame_from_file, validate_extension, create_folder_when_missing, get_annotated_frame
 from db_connect.database import Videos, Frame, Object, Model, get_unprocessed_frame_list, get_processed_frame_list_with_objects, get_video_list as db_get_video_list, get_model_list as db_get_model_list, insert_frame, insert_video, create_tables, insert_model, get_video, get_frame_list, get_frame_list_with_objects, get_model, insert_object, insert_object_type, get_processed_frame as db_get_processed_frame, insert_processed_frame, get_frame, get_processed_frame_with_objects, insert_frames
 import argparse
 import uuid
@@ -267,7 +267,7 @@ def get_processed_frame(model_id, video_id, frame_num):
         # Generate boxes image and return from DB if found
         conn.close()
         frame_dict = res.processed_frame.to_dict()
-        frame_dict['image'] = Base64_Transcoder.nparray_to_data_url(get_frame_from_file(video.video_url, frame_num)) # TODO: MAKE THIS USE THE BOXED IMAGE GENERATOR
+        frame_dict['image'] = Base64_Transcoder.nparray_to_data_url(get_annotated_frame(res.processed_frame, get_frame_from_file(video.video_url, frame_num)))
         return frame_dict, 200
     # Get unprocessed frame and process if not found
     res = get_frame(conn, cursor, video_id, frame_num)
@@ -323,7 +323,7 @@ def process_frame_helper(model: Model, video: Videos, frame: Frame, object_detec
     conn, cursor = db_connect(DATABASE)
     for object in objects:
         converted_objects.append({'type': object['name'], 'confidence': object['confidence'], 'x1': object['box']['x1'], 'y1': object['box']['y1'], 'x2': object['box']['x2'], 'y2': object['box']['y2']})
-        insert_object_type(conn, cursor, object['class'], object['name']) # @BenSmall  <- This is the line that will need to change when objects change
+        insert_object_type(conn, cursor, model.model_uuid, object['class'], object['name'])
         res = insert_object(conn, cursor, object['class'], frame.frame_uuid, model.model_uuid, object['confidence'], object['box']['x1'], object['box']['y1'], object['box']['x2'], object['box']['y2'])
         if res.status != 'success':
             print("Error inserting Object: ", res.message)
