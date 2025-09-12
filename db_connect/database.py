@@ -530,6 +530,10 @@ class ProcessedFrame:
   def add_object(self, object: Object):
     self.objects.append(object)
 
+  def to_dict(self) -> dict:
+    frame_dict = {'frame_num': self.frame_number, 'objects': [o.__dict__ for o in self.objects]}
+    return frame_dict
+
 class ProcessedFrameResponse:
   def __init__(self, response: Response, processed_frame: ProcessedFrame) :
     self.response = response
@@ -565,7 +569,7 @@ def get_processed_frame(conn, cursor, video_uuid: str, model_uuid: str, frame_nu
   except Exception as e :
     return ProcessedFrameResponse(Response("error", f"Get processed frame failed: {str(e)}"), None)
   
-def get_processed_frame_with_objects(conn, cursor, video_uuid: str, model_uuid: str, frame_number: int) -> FrameResponse :
+def get_processed_frame_with_objects(conn, cursor, video_uuid: str, model_uuid: str, frame_number: int) -> ProcessedFrameResponse :
   try :
     cursor.execute("""
       SELECT f.frame_uuid, f.video_uuid, pf.model_uuid, f.frame_number,
