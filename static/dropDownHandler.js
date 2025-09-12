@@ -1,6 +1,7 @@
 import { Video, Model } from './Classes.js'
 
 let videos = [];
+let models = [];
 
 export async function fetchVideos() {
     try {
@@ -17,14 +18,14 @@ export async function fetchVideos() {
         videos = data.map(video => new Video(video.title, video.video_id));
 
         // Populate the dropdown
-        populateDropdown(videos);
+        populateVideoDropdown(videos);
 
     } catch (error) {
         console.error('Error fetching videos:', error);
     }
 }
 
-function populateDropdown(videoArray) {
+function populateVideoDropdown(videoArray) {
     const dropdown = document.getElementById('videoDropdown');
 
     // Clear any existing options
@@ -45,5 +46,27 @@ function populateDropdown(videoArray) {
     });
 }
 
+export async function fetchModels() {
+    try {
+        const response = await fetch('/models', { method: 'GET' });
+        if (!response.ok) {
+            throw new Error(`HTTP error! Status: ${response.status}`);
+        }
+
+        // Parse the JSON response
+        const data = await response.json();
+
+        // Convert each item into a Video object
+        models = data.map(model => new Model(model.model_title, model.model_id));
+
+        // Populate the dropdown
+        populateModelDropdown(models);
+
+    } catch (error) {
+        console.error('Error fetching models:', error);
+    }
+}
+
 // Initialize on page load
+document.addEventListener('DOMContentLoaded', fetchVideos);
 document.addEventListener('DOMContentLoaded', fetchVideos);
