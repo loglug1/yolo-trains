@@ -156,11 +156,16 @@ def insert_processed_frames(conn, cursor, frame_data) -> Response :
   except Exception as e :
     return Response("error", f"Insert processed frames failed: {str(e)}")
 
-def insert_object(conn, cursor, type_id: int, frame_uuid: str, model_uuid: str, 
+def insert_object(conn, cursor, class_id: int, frame_uuid: str, model_uuid: str, 
                     confidence: float, x1: float, y1: float, x2: float, y2: float) -> Response :
   try :
-    cursor.execute("""INSERT INTO objects (type_id, frame_uuid, model_uuid, confidence, x1, y1, x2, y2) VALUES (?, ?, ?, ?, ?, ?, ?, ?)""", 
-                    (type_id, frame_uuid, model_uuid, confidence, x1, y1, x2, y2))
+    cursor.execute("""INSERT INTO objects (type_id, frame_uuid, model_uuid, confidence, x1, y1, x2, y2) VALUES (
+                    (SELECT id 
+                    FROM object_types 
+                    WHERE model_uuid = ? AND class_id = ? 
+                    LIMIT 1),
+                    ?, ?, ?, ?, ?, ?, ?)""", 
+                    (model_uuid, class_id, frame_uuid, model_uuid, confidence, x1, y1, x2, y2))
     conn.commit()
     return Response("success", f"Object in frame {frame_uuid} inserted successfully.") 
   
@@ -518,12 +523,15 @@ def get_unprocessed_frame_list(conn, cursor, video_uuid: str, model_uuid: str) -
 # QUERY PROCESSED-FRAMES FUNCTIONS
 # classes
 class ProcessedFrame:
-  def __init__(self, frame_uuid: str, video_uuid: str, model_uuid: str, frame_number: int, objects: list[Object] = []) :
+  def __init__(self, frame_uuid: str, video_uuid: str, model_uuid: str, frame_number: int, objects: list[Object] = None) :
     self.frame_uuid = frame_uuid
     self.video_uuid = video_uuid
     self.model_uuid = model_uuid
     self.frame_number = frame_number
-    self.objects: list[Object] = []
+    if objects is None:
+      self.objects = list[Object]()
+    else:
+      self.objects: list[Object] = objects
 
   def __str__(self):
     return f"Frame: {self.frame_uuid} Video: {self.video_uuid} Model: {self.model_uuid} Number: {self.frame_number}" + (f", Objects: {len(self.objects)}" if self.objects else "")

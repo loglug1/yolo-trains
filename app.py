@@ -7,7 +7,7 @@ from ai_modules.abc_model import ObjectDetectionModel
 from ai_modules.yolo11s import Yolo11s
 from utilities.base64_transcoder import Base64_Transcoder
 from utilities.helper_functions import db_connect, get_sha256, get_num_frames, get_basename, get_frame_from_file, validate_extension, create_folder_when_missing, get_annotated_frame
-from db_connect.database import Videos, Frame, Object, Model, get_unprocessed_frame_list, get_processed_frame_list_with_objects, get_video_list as db_get_video_list, get_model_list as db_get_model_list, insert_frame, insert_video, create_tables, insert_model, get_video, get_frame_list, get_frame_list_with_objects, get_model, insert_object, insert_object_type, get_processed_frame as db_get_processed_frame, insert_processed_frame, get_frame, get_processed_frame_with_objects, insert_frames
+from db_connect.database import Videos, Frame, Object, Model, ProcessedFrame, get_unprocessed_frame_list, get_processed_frame_list_with_objects, get_video_list as db_get_video_list, get_model_list as db_get_model_list, insert_frame, insert_video, create_tables, insert_model, get_video, get_frame_list, get_frame_list_with_objects, get_model, insert_object, insert_object_type, get_processed_frame as db_get_processed_frame, insert_processed_frame, get_frame, get_processed_frame_with_objects, insert_frames
 import argparse
 import uuid
 import threading
@@ -263,19 +263,52 @@ def get_processed_frame(model_id, video_id, frame_num):
         return res.response.message, 500
     video = res.video
     res = get_processed_frame_with_objects(conn, cursor, video_id, model_id, frame_num)
-    if res.response.status == 'success':
+    if res.response.status == 'error':
+        conn.close()
+        return res.response.message, 500
+    if "not found." in res.response.message:
+        # Get unprocessed frame and process if not found
+        res = get_frame(conn, cursor, video_id, frame_num)
+        if res.response.status != 'success':
+            conn.close()
+            return res.response.message, 500
+        conn.close()
+        return process_single_frame(model, video, res.frame), 200
+    # Generate boxes image and return from DB if found
+    conn.close()
+    frame_dict = res.processed_frame.to_dict()
+    frame_dict['image'] = Base64_Transcoder.nparray_to_data_url(get_annotated_frame(res.processed_frame, get_frame_from_file(video.video_url, frame_num)))
+    return frame_dict, 200
+
+# Get specific processed frame img tag
+@app.route('/test/models/<model_id>/<video_id>/<int:frame_num>', methods=['GET'])
+def get_processed_frame_img_tag(model_id, video_id, frame_num):
+    # Get Model Metadata
+    conn, cursor = db_connect(DATABASE)
+    res = get_model(conn, cursor, model_id)
+    if res.response.status != 'success':
+        conn.close()
+        return res.response.message, 500
+    model = res.model
+    # Get Video Metadata
+    res = get_video(conn, cursor, video_id)
+    if res.response.status != 'success':
+        conn.close()
+        return res.response.message, 500
+    video = res.video
+    res = get_processed_frame_with_objects(conn, cursor, video_id, model_id, frame_num)
+    if res.response.status == 'success' and "not found." not in res.response.message:
         # Generate boxes image and return from DB if found
         conn.close()
-        frame_dict = res.processed_frame.to_dict()
-        frame_dict['image'] = Base64_Transcoder.nparray_to_data_url(get_annotated_frame(res.processed_frame, get_frame_from_file(video.video_url, frame_num)))
-        return frame_dict, 200
+        return f"<img src='{Base64_Transcoder.nparray_to_data_url(get_annotated_frame(res.processed_frame, get_frame_from_file(video.video_url, frame_num)))}' alt='fake alt' />", 200
     # Get unprocessed frame and process if not found
     res = get_frame(conn, cursor, video_id, frame_num)
     if res.response.status != 'success':
         conn.close()
         return res.response.message, 500
     print("Returning freshly processed frame")
-    return process_single_frame(model, video, res.frame), 200
+    processed_frame = process_single_frame(model, video, res.frame)
+    return f"<img src='{processed_frame['image']}' alt='fake alt' />", 200
     
 
 # ======================================== Frame Processing Functions ==========================================
@@ -322,7 +355,8 @@ def process_frame_helper(model: Model, video: Videos, frame: Frame, object_detec
     converted_objects = list[Object]()
     conn, cursor = db_connect(DATABASE)
     for object in objects:
-        converted_objects.append({'type': object['name'], 'confidence': object['confidence'], 'x1': object['box']['x1'], 'y1': object['box']['y1'], 'x2': object['box']['x2'], 'y2': object['box']['y2']})
+        #converted_objects.append({'type': object['name'], 'confidence': object['confidence'], 'x1': object['box']['x1'], 'y1': object['box']['y1'], 'x2': object['box']['x2'], 'y2': object['box']['y2']})
+        converted_objects.append(Object(object['name'], object['confidence'], object['box']['x1'], object['box']['y1'], object['box']['x2'], object['box']['y2'], object['class']))
         insert_object_type(conn, cursor, model.model_uuid, object['class'], object['name'])
         res = insert_object(conn, cursor, object['class'], frame.frame_uuid, model.model_uuid, object['confidence'], object['box']['x1'], object['box']['y1'], object['box']['x2'], object['box']['y2'])
         if res.status != 'success':
@@ -333,7 +367,10 @@ def process_frame_helper(model: Model, video: Videos, frame: Frame, object_detec
     if res.status != 'success':
         print("Error saving frame: ", res.message)
     conn.close()
-    return {'frame_num': frame.frame_number, 'image': processed_data_url, 'objects': converted_objects}
+    # Get Frame with boxes drawn
+    pframe = ProcessedFrame(frame.frame_uuid, video.video_uuid, model.model_uuid, frame.frame_number, converted_objects)
+    annotated_image = get_annotated_frame(pframe, frame_image)
+    return {'frame_num': frame.frame_number, 'image': Base64_Transcoder.nparray_to_data_url(annotated_image), 'objects': [vars(converted_object) for converted_object in converted_objects]}
 
 # ====================================== SocketIO Event Handlers ==============================================
 
