@@ -75,4 +75,22 @@ export async function fetchModels() {
     }
 }
 
-//HTTP GET request for /models/model_id/video_id to populating the graph
+// HTTP GET request for /models/model_id/video_id to populating the graph
+// This should get frames, might need different response based on if already processed or not
+export async function fetchProcessing(videoId,modelId){
+    try {
+        const response = await fetch(`/models/${modelId}/${videoId}`, {methods: 'GET'});
+
+        if(!response.ok) {
+            throw new Error(`HTTP error! Status: ${response.status}`);
+        }
+        //Parse the JSON response
+        const data = await response.json();
+        return data;
+    }catch(error){
+        console.error('Error fetching processed frames:', error);
+        return null;
+    }
+}
+
+//HTTP Get 

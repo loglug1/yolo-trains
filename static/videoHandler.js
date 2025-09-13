@@ -26,6 +26,17 @@ import { postVideo, fetchVideos, fetchModels } from './api.js';
 // }
 
 // Video File Change
+document.getElementById("videoInput").addEventListener("change", function() {
+  const label = document.getElementById("videoLabel");
+  if(this.files.length > 0){
+    //update label text to selected file name
+    label.textContent = this.files[0].name;
+  }else{
+    //Reset label if no file is selected
+    label.textContent = "File Input";
+  }
+})
+// Uploading video
 async function uploadVideo(){
   const fileInput = document.getElementById("videoInput");
   if (fileInput.files.length === 0){
@@ -36,6 +47,7 @@ async function uploadVideo(){
   const file = fileInput.files[0];
   const result = await postVideo(file);
   console.log("Server response:", result);
+  alert(`Server response: ${result}`);
   populateDropdown();
 }
 
