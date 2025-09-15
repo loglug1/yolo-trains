@@ -1,5 +1,5 @@
 import { Video, Model, Frame, DetectionObject } from './Classes.js';
-import { postVideo, fetchVideos, fetchModels } from './api.js';
+import { postVideo, fetchVideos, fetchModels, fetchProcessing } from './api.js';
 
 
 
@@ -119,7 +119,7 @@ async function populateVideoDropdown() {
     videoArray.forEach(video => {
         const option = document.createElement('option');
         option.text = video.title;    // Displayed text
-        option.value = video.title;   
+        option.value = video.video_id;   // Underlying value
         dropdown.add(option);
     });
 }
@@ -141,7 +141,7 @@ async function populateModelDropdown() {
     modelArray.forEach(model => {
         const option = document.createElement('option');
         option.text = model.model_title;    // Displayed text
-        option.value = model.model_title;   
+        option.value = model.model_id;   // Underlying value
         dropdown.add(option);
     });
 }

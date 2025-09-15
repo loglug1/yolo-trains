@@ -6,9 +6,9 @@ export class Video {
 }
 
 export class Model {
-    constructor(model_id, model_title) {
-        this.model_id = model_id;
+    constructor(model_title, model_id) {
         this.model_title = model_title;
+        this.model_id = model_id;
     }
 }
 
@@ -22,7 +22,6 @@ export class Frame {
 export class DetectionObject {
     constructor(object_type, x1, x2, y1, y2, confidence) {
         this.object_type = object_type;
-        this.label = label;
         this.x1 = x1;
         this.x2 = x2;
         this.y1 = y1;
