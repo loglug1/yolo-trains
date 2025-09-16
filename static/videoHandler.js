@@ -53,55 +53,6 @@ async function uploadVideo(){
 
 document.getElementById("uploadBtn").addEventListener("click",uploadVideo);
 
-// Model File Change
-// const modelFileInput = document.getElementById('modelFileInput');
-
-// modelFileInput.addEventListener('change', () => {
-//   const file = modelFileInput.files[0];
-
-//   if (file) {
-//     const formData = new FormData();
-//     formData.append('modelFile', file);
-
-//     fetch('/uploadModel', {
-//       method: 'POST',
-//       body: formData,
-//     })
-//     .then(response => {
-//       if (response.ok) {
-//         response.json().then(data => {alert(data['upload_status']);});
-//       } else {
-//         alert('File upload failed');
-//       }
-//     })
-//     .catch(error => {
-//       alert('Error uploading file:' + error);
-//     });
-//   }
-// });
-
-// export async function fetchVideos() {
-//     try {
-//         const response = await fetch('/videos', { method: 'GET' });
-
-//         if (!response.ok) {
-//             throw new Error(`HTTP error! Status: ${response.status}`);
-//         }
-
-//         // Parse the JSON response
-//         const data = await response.json();
-
-//         // Convert each item into a Video object
-//         videos = data.map(video => new Video(video.title, video.video_id));
-
-//         // Populate the dropdown
-//         populateDropdown(videos);
-
-//     } catch (error) {
-//         console.error('Error fetching videos:', error);
-//     }
-// }
-
 async function populateVideoDropdown() {
     let videoArray = await fetchVideos();
     const dropdown = document.getElementById('videoDropdown');
@@ -123,6 +74,8 @@ async function populateVideoDropdown() {
         dropdown.add(option);
     });
 }
+
+// Model File Change
 
 async function populateModelDropdown() {
     let modelArray = await fetchModels();
