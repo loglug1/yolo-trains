@@ -318,6 +318,22 @@ def get_object_type_list(conn, cursor) -> ObjectTypeListResponse :
   except Exception as e :
     return ObjectTypeListResponse(Response("error", f"Get object type list failed: {str(e)}"), [])
   
+def get_object_type_list_by_model_by_video(conn, cursor, model_uuid: str, video_uuid: str) -> ObjectTypeListResponse :
+  try :
+    cursor.execute("""
+      SELECT DISTINCT ot.id, ot.name
+      FROM object_types ot
+      JOIN objects o ON ot.id = o.type_id
+      JOIN frames f ON o.frame_uuid = f.frame_uuid
+      WHERE ot.model_uuid = ? AND f.video_uuid = ?
+    """, (model_uuid, video_uuid))
+    rows = cursor.fetchall()
+    object_types = [ObjectType(type=row[0], name=row[1]) for row in rows]
+    return ObjectTypeListResponse(Response("success", f"Object types for model {model_uuid} and video {video_uuid} fetched successfully."), object_types)
+  
+  except Exception as e :
+    return ObjectTypeListResponse(Response("error", f"Get object type list by model and video failed: {str(e)}"), [])
+  
 def get_object_type(conn, cursor, type: int) -> ObjectTypeResponse :
   try :
     cursor.execute("SELECT id, name FROM object_types WHERE id = ?", (type,))
