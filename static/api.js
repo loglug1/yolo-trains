@@ -65,7 +65,7 @@ export async function fetchModels() {
         const data = await response.json();
 
         // Convert each item into a Video object
-        let models = data.map(model => new Model(model.model_title, model.model_id));
+        let models = data.map(model => new Model(model.title, model.model_id));
 
         return models;
 
