@@ -1,5 +1,4 @@
 from db_connect.database import ProcessedFrame
-from ultralytics.utils.plotting import colors
 import sqlite3
 import hashlib
 import numpy
@@ -45,18 +44,37 @@ def create_folder_when_missing(path):
     if not os.path.exists(path):
         os.makedirs(path)
 
+def get_color_from_word(word):
+    # Hash the word to a hexadecimal string
+    hash_object = hashlib.md5(word.encode())
+    digested_hash = hash_object.hexdigest()
+
+    return (int(digested_hash[0:2], 16), int(digested_hash[2:4], 16), int(digested_hash[4:6], 16))
+
 # Function to draw objects onto frame
 def get_annotated_frame(processed_frame: ProcessedFrame, frame_img: numpy.ndarray) :
     if processed_frame.objects is None :
         return frame_img
     
     updated_frame = frame_img
-        
     for obj in processed_frame.objects :
         tl_pt = (round(obj.x1), round(obj.y1))
         br_pt = (round(obj.x2), round(obj.y2))
-        bc = colors(obj.class_id if obj.class_id is not None else 0, bgr=True)
+        #bc = colors(obj.class_id if obj.class_id is not None else 0, bgr=True)
+        color = get_color_from_word(obj.type)
 
-        updated_frame = cv2.rectangle(updated_frame, tl_pt, br_pt, bc, 2)
+        updated_frame = cv2.rectangle(updated_frame, tl_pt, br_pt, color, 2)
+
+        # Code to add text labels:
+        label = f"{obj.type}: {(obj.confidence * 100):.2f}%"
+        color = get_color_from_word(obj.type)
+        # For the text background
+        # Finds space required by the text so that we can put a background with that amount of width.
+        (w, h), _ = cv2.getTextSize(
+                label, cv2.FONT_HERSHEY_SIMPLEX, 0.6, 1)
+
+        # Prints the text.
+        updated_frame = cv2.rectangle(updated_frame, (tl_pt[0], tl_pt[1] - 20), (tl_pt[0] + w, tl_pt[1]), color, -1)
+        updated_frame = cv2.putText(updated_frame, label, (tl_pt[0], tl_pt[1] - 5), cv2.FONT_HERSHEY_SIMPLEX, 0.6, (255, 255, 255), 1)
     
     return updated_frame
