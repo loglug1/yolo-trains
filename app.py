@@ -3,13 +3,13 @@ from werkzeug.utils import secure_filename
 import cv2
 import os
 from flask_socketio import SocketIO, send, emit, join_room
+from ai_modules.abc_model import ObjectDetectionModel
 from ai_modules.yolo11s import Yolo11s
 from utilities.base64_transcoder import Base64_Transcoder
-from db_connect.database import Videos, Frame, Object, get_frame_with_objects, get_video_list as db_get_video_list, get_model_list as db_get_model_list, insert_frame, insert_video, create_tables, insert_model, get_video, get_frame_list, get_frame_list_with_objects, get_model, insert_object, insert_object_type, get_processed_frame as db_get_processed_frame, insert_processed_frame, get_frame
-import sqlite3
+from utilities.helper_functions import db_connect, get_sha256, get_num_frames, get_basename, get_frame_from_file, validate_extension, create_folder_when_missing, get_annotated_frame
+from db_connect.database import Videos, Frame, Object, Model, ProcessedFrame, get_unprocessed_frame_list, get_processed_frame_list_with_objects, get_video_list as db_get_video_list, get_model_list as db_get_model_list, insert_frame, insert_video, create_tables, insert_model, get_video, get_frame_list, get_frame_list_with_objects, get_model, insert_object, insert_object_type, get_processed_frame as db_get_processed_frame, insert_processed_frame, get_frame, get_processed_frame_with_objects, insert_frames
 import argparse
 import uuid
-import hashlib
 import threading
 import json
 #from ai_modules.tensorflow import TensorFlowModel
@@ -29,69 +29,38 @@ args = parser.parse_args()
 hostname = args.hostname
 port = args.port
 upload_path = args.upload_path
-DATABASE = f'{upload_path}/database'
+
+# Constants defining what file types can be uploaded
+ALLOWED_MODEL_EXTENSIONS = ['pt']
+ALLOWED_VIDEO_EXTENSIONS = ['mp4', 'mkv']
+
+# Constants defining file paths
+MODEL_LOCATION = f"{upload_path}/models/"
+VIDEO_LOCATION = f"{upload_path}/videos/"
+DATABASE = f'{upload_path}/database.db'
+
+# Ensure paths exists
+create_folder_when_missing(upload_path)
+create_folder_when_missing(MODEL_LOCATION)
+create_folder_when_missing(VIDEO_LOCATION)
+
+# Ensure that the database exists and contains default model
+conn, cursor = db_connect(DATABASE)
+create_tables(conn, cursor)
+insert_model(conn, cursor, 'default', "Default Ultralytics Yolo Model", "ai_modules/ob_detect_models/yolo11s.pt")
+conn.close()
+
+tasks = list() # Used to keep track of tasks in progress
 
 socketio = SocketIO(app, cors_allowed_origins=["https://piehost.com",f"http://{hostname}:{port}"], max_http_buffer_size=10*1000000, async_mode='threading')
 
-# Remembers the default models
-DEFAULT_MODELS = {'yolo': 'ai_modules/ob_detect_models/yolo11s.pt'}
-model_file = DEFAULT_MODELS['yolo']
-def change_model_file(new_model_path):
-    if model_file not in DEFAULT_MODELS.values():
-        os.remove(model_file)
-    model_file = new_model_path
-
-# Function to get file hashes (used as ids for videos and models)
-def get_sha256(file_bytes):
-    return hashlib.sha256(file_bytes).hexdigest()
-
-# Function to pull frame from video file
-def get_frame_from_file(video_path, frame_num):
-    cap = cv2.VideoCapture(video_path)
-    cap.set(cv2.CAP_PROP_POS_FRAMES, frame_num)
-    success, image = cap.read()
-    cap.release()
-    if success:
-        return cv2.cvtColor(image, cv2.COLOR_BGR2RGB) # Convert Frame Extracted using CV2 to RGB (Because of historical reasons. Ask ChatGPT why.)
-    else:
-        raise FileNotFoundError(video_path)
-
-# Function to Get Number of Frames in Video File
-def get_num_frames(video_path):
-    cap = cv2.VideoCapture(video_path)
-    if not cap.isOpened():
-        raise FileNotFoundError(video_path)
-    num_frames = cap.get(cv2.CAP_PROP_FRAME_COUNT)
-    return num_frames
-
+# ======================================== API ENDPOINTS =======================================
 
 # Serves content from the static directory to the root URL using flask
 @app.route("/")
 @app.route("/<path:file>")
 def static_page(file = "index.html"):
     return send_from_directory("static", file)
-
-# Constant defining what file types can be uploaded
-ALLOWED_MODEL_EXTENSIONS = ['pt']
-ALLOWED_VIDEO_EXTENSIONS = ['mp4', 'mkv']
-MODEL_LOCATION = f"{upload_path}/models/"
-VIDEO_LOCATION = f"{upload_path}/videos/"
-FRAME_LOCATION = f"{upload_path}/frames/"
-
-# Functions used in validating uploaded files
-def validate_extension(filename, extension_list):
-    return '.' in filename and filename.split('.')[1].lower() in extension_list
-def get_basename(filename):
-    return filename.split('.')[0]
-
-def db_connect():
-    conn = sqlite3.connect(f'{DATABASE}.db')
-    cursor = conn.cursor()
-    return conn, cursor
-
-tasks = list() # Used to keep track of tasks in progress
-
-# ======================================== API ENDPOINTS =======================================
 
 # Upload a model, model file must be in model_file field of form
 @app.route("/models", methods=['POST'])
@@ -115,7 +84,7 @@ def upload_model():
             file.save(model_path)
             # VALIDATE MODEL FILE TODO <<<<<<<<<<
             # Save Model Database Entry
-            conn, cursor = db_connect()
+            conn, cursor = db_connect(DATABASE)
             insert_model(conn, cursor,model_id, name, model_path)
             # Return model info
             return {'model_id': model_id, 'name': name}, 201
@@ -139,43 +108,42 @@ def upload_video():
             # Generate Metadata for video
             video_id = get_sha256(file_bytes)
             name = get_basename(file.filename)
-            # Save Video to Video Upload Location
             file_extension = secure_filename(file.filename).split('.')[1].lower()
             video_path = os.path.join(VIDEO_LOCATION, secure_filename(video_id + '.' + file_extension))
+            # Save Video Database Entry (Happens before saving video to ensure that the video doesn't already exist)
+            conn, cursor = db_connect(DATABASE)
+            res = insert_video(conn, cursor, video_id, name, video_path)
+            if res.status != 'success':
+                conn.close()
+                return res.message, 409
+            # Save Video to Video Upload Location
             file.save(video_path)
             # Get frame count and validate video
             cap = cv2.VideoCapture(video_path)
             if not cap.isOpened():
                 os.remove(video_path)
+                conn.close()
                 return 'Invalid Video File', 400
             num_frames = cap.get(cv2.CAP_PROP_FRAME_COUNT)
-            # Save Video Database Entry
-            conn, cursor = db_connect()
-            res = insert_video(conn, cursor, video_id, name, video_path)
-            conn.close()
+            # Insert Frames into Database
+            frame_data = list()
+            for frame_num in range(int(num_frames)):
+                frame_data.append((str(uuid.uuid4()), video_id, frame_num))
+            res = insert_frames(conn, cursor, frame_data)
             if res.status != 'success':
-                return res.message, 409
-            frame_counter = -1
-            conn, cursor = db_connect()
-            while True:
-                success, frame = cap.read()
-                if not success: # If getting next frame fails
-                    break
-                frame_counter += 1
-                frame_id = str(uuid.uuid4())
-                r2 = insert_frame(conn, cursor, frame_id, video_id, frame_counter)
-            cap.release()
-            conn.close()
+                conn.close()
+                return res.message, 400
             # Return video info
             return {'video_id': video_id, 'name': name, 'num_frames': num_frames}, 201
         except Exception as e:
+            conn.close()
             return e, 500
         
 # Get list of videos available
 @app.route('/videos', methods=['GET']) 
 def get_video_list():
     # Get videos from database
-    conn, cursor = db_connect()
+    conn, cursor = db_connect(DATABASE)
     res = db_get_video_list(conn, cursor)
     conn.close()
     # Return Videos
@@ -189,7 +157,7 @@ def get_video_list():
 @app.route('/models', methods=['GET']) 
 def get_model_list():
     # Get models from database
-    conn, cursor = db_connect()
+    conn, cursor = db_connect(DATABASE)
     res = db_get_model_list(conn, cursor)
     conn.close()
     # Return Models
@@ -202,7 +170,7 @@ def get_model_list():
 # Get All Unprocessed Frames for Video
 @app.route('/videos/<video_id>', methods=['GET'])
 def fetch_video(video_id):
-    conn, cursor = db_connect()
+    conn, cursor = db_connect(DATABASE)
     # Get Video Info
     res = get_video(conn, cursor, video_id)
     if res.response.status != 'success':
@@ -225,7 +193,7 @@ def fetch_video(video_id):
 @app.route('/models/<model_id>/<video_id>', methods=['GET']) 
 def get_all_processed_frames(model_id, video_id):
     # Get Video Metadata from DB
-    conn, cursor = db_connect()
+    conn, cursor = db_connect(DATABASE)
     res = get_video(conn, cursor, video_id)
     conn.close()
     if res.response.status != 'success':
@@ -237,66 +205,36 @@ def get_all_processed_frames(model_id, video_id):
     except FileNotFoundError as e:
         return "File not found: " + e, 500
     # Get Processed Frames
-
-    # conn, cursor = db_connect()
-    # #res = get_processed_frames(model_id, video_id)
-    # conn.close()
-    # if res.response.status != 'success':
-    #     return res.response.message, 500
-    # processed_frames = [frame.to_dict() for frame in res.frames]
-
-    #TEMP
-    conn, cursor = db_connect()
-    res = get_frame_list_with_objects(conn, cursor, video_id, model_id)
+    conn, cursor = db_connect(DATABASE)
+    res = get_processed_frame_list_with_objects(conn, cursor, video_id, model_id)
+    conn.close()
     if res.response.status != 'success':
         return res.response.message, 500
-    temp_frame_list = res.frames
-    processed_frames = list[Frame]()
-    for frame in temp_frame_list:
-        res = db_get_processed_frame(conn, cursor, frame.frame_uuid, model_id)
-        if res.response.status == 'success':
-            processed_frames.append(frame)
-    conn.close()
-
+    processed_frames = [frame.to_dict() for frame in res.processed_frames]
     # Check if task already exists for model/video combo
     task_id = str(uuid.uuid5(uuid.NAMESPACE_URL, model_id + video_id)) # Creates a deterministic UUID based on the model and video ids
     with threading.Lock():
         task_started = task_id in tasks # Boolean (separate from if statement so it can be in a threading.Lock())
     if task_started:
-        return {'connection_id': task_id, 'num_frames': num_frames, 'frames': [frame.to_dict() for frame in processed_frames]}, 200
+        return {'connection_id': task_id, 'num_frames': num_frames, 'frames': processed_frames}, 200
     # Get Unprocessed Frames
-
-    # conn, cursor = db_connect()
-    # # res = get_unprocessed_frames(model_id, video_id)
-    # conn.close()
-    # if res.response.status != 'success':
-    #     return res.response.message, 500
-    # unprocessed_frames = res.frames
-
-    #TEMP
-    conn, cursor = db_connect()
-    res = get_frame_list(conn, cursor, video_id)
-    if res.response.status != 'success':
-        return res.response.message, 500
-    temp_frame_list = res.frames
-    unprocessed_frames = list[Frame]()
-    for frame in temp_frame_list:
-        res = db_get_processed_frame(conn, cursor, frame.frame_uuid, model_id)
-        if res.response.status == 'error':
-            unprocessed_frames.append(frame)
+    conn, cursor = db_connect(DATABASE)
+    res = get_unprocessed_frame_list(conn, cursor, video_id, model_id)
     conn.close()
-
+    if res.response.status != 'success' and "No unprocessed frames" not in res.response.message:
+        return res.response.message, 500
+    unprocessed_frames = res.frames
     # If there are unprocessed frames left, start the subroutine
     if len(unprocessed_frames) > 0:
         if not task_started:
             socketio.start_background_task(_process_all_frames, model_id, video, unprocessed_frames, task_id)
-        return {'connection_id': task_id, 'num_frames': num_frames, 'frames': [frame.to_dict() for frame in processed_frames]}, 200
-    return {'num_frames': num_frames, 'frames': [frame.to_dict() for frame in processed_frames]}, 200
+        return {'connection_id': task_id, 'num_frames': num_frames, 'frames': processed_frames}, 200
+    return {'num_frames': num_frames, 'frames': processed_frames}, 200
 
 # Get Specific Unprocessed Frame
 @app.route('/videos/<video_id>/<int:frame_num>', methods=['GET']) 
 def get_raw_frame(video_id, frame_num):
-    conn, cursor = db_connect()
+    conn, cursor = db_connect(DATABASE)
     res = get_video(conn, cursor, video_id)
     conn.close()
     if res.response.status != 'success':
@@ -311,20 +249,69 @@ def get_raw_frame(video_id, frame_num):
 # Get specific processed frame
 @app.route('/models/<model_id>/<video_id>/<int:frame_num>', methods=['GET'])
 def get_processed_frame(model_id, video_id, frame_num):
-    conn, cursor = db_connect()
-    print("Get with objects")
-    res = get_frame_with_objects(conn, cursor, video_id, model_id, frame_num)
+    # Get Model Metadata
+    conn, cursor = db_connect(DATABASE)
+    res = get_model(conn, cursor, model_id)
     if res.response.status != 'success':
+        conn.close()
         return res.response.message, 500
-    frame = res.frame
-    print("Get processed frame")
-    res = db_get_processed_frame(conn, cursor, res.frame.frame_uuid, model_id)
-    conn.close()
+    model = res.model
+    # Get Video Metadata
+    res = get_video(conn, cursor, video_id)
     if res.response.status != 'success':
-        return process_single_frame(model_id, video_id, frame), 200
-    return frame.to_dict(), 200
+        conn.close()
+        return res.response.message, 500
+    video = res.video
+    res = get_processed_frame_with_objects(conn, cursor, video_id, model_id, frame_num)
+    if res.response.status == 'error':
+        conn.close()
+        return res.response.message, 500
+    if "not found." in res.response.message:
+        # Get unprocessed frame and process if not found
+        res = get_frame(conn, cursor, video_id, frame_num)
+        if res.response.status != 'success':
+            conn.close()
+            return res.response.message, 500
+        conn.close()
+        return process_single_frame(model, video, res.frame), 200
+    # Generate boxes image and return from DB if found
+    conn.close()
+    frame_dict = res.processed_frame.to_dict()
+    frame_dict['image'] = Base64_Transcoder.nparray_to_data_url(get_annotated_frame(res.processed_frame, get_frame_from_file(video.video_url, frame_num)))
+    return frame_dict, 200
 
-# ======================================== Background Thread Functions ==========================================
+# Get specific processed frame img tag
+@app.route('/test/models/<model_id>/<video_id>/<int:frame_num>', methods=['GET'])
+def get_processed_frame_img_tag(model_id, video_id, frame_num):
+    # Get Model Metadata
+    conn, cursor = db_connect(DATABASE)
+    res = get_model(conn, cursor, model_id)
+    if res.response.status != 'success':
+        conn.close()
+        return res.response.message, 500
+    model = res.model
+    # Get Video Metadata
+    res = get_video(conn, cursor, video_id)
+    if res.response.status != 'success':
+        conn.close()
+        return res.response.message, 500
+    video = res.video
+    res = get_processed_frame_with_objects(conn, cursor, video_id, model_id, frame_num)
+    if res.response.status == 'success' and "not found." not in res.response.message:
+        # Generate boxes image and return from DB if found
+        conn.close()
+        return f"<img src='{Base64_Transcoder.nparray_to_data_url(get_annotated_frame(res.processed_frame, get_frame_from_file(video.video_url, frame_num)))}' alt='fake alt' />", 200
+    # Get unprocessed frame and process if not found
+    res = get_frame(conn, cursor, video_id, frame_num)
+    if res.response.status != 'success':
+        conn.close()
+        return res.response.message, 500
+    print("Returning freshly processed frame")
+    processed_frame = process_single_frame(model, video, res.frame)
+    return f"<img src='{processed_frame['image']}' alt='fake alt' />", 200
+    
+
+# ======================================== Frame Processing Functions ==========================================
 
 def _process_all_frames(model_id: str, video: Videos, frames: list[Frame], task_id: str):
     with threading.Lock():
@@ -332,56 +319,29 @@ def _process_all_frames(model_id: str, video: Videos, frames: list[Frame], task_
             return
         tasks.append(task_id) # Mark as active task for reconnection
     # Get Model Metadata
-    conn, cursor = db_connect()
+    conn, cursor = db_connect(DATABASE)
     res = get_model(conn, cursor, model_id)
     if res.response.status != 'success':
         conn.close()
         return
+    model = res.model
     # Load object detection model with model file
     object_detection_model = Yolo11s(res.model.model_url)
     for frame in frames:
-        # Get Frame Image
-        frame_image = get_frame_from_file(video.video_url, frame.frame_number)
-        # Run predictions on frame
-        object_detection_model.predict_objects_in(frame_image)
-        # Get frame with boxes drawn
-        nparr_processed_frame = object_detection_model.get_image()
-        # Convert processed frame image into base64 data url
-        processed_data_url = Base64_Transcoder.nparray_to_data_url(nparr_processed_frame)
-        # Write detected objects to database
-        objects = json.loads(object_detection_model.get_boxes_json())
-        scrubbed_objects = list[Object]()
-        for object in objects:
-            insert_object_type(conn, cursor, object['class'], object['name'])
-            res = insert_object(conn, cursor, object['class'], frame.frame_uuid, model_id, object['confidence'], object['box']['x1'], object['box']['y1'], object['box']['x2'], object['box']['y2'])
-            if res != 'success':
-                continue
-            scrubbed_objects.append({'type': object['name'], 'confidence':object['confidence'], 'x1': object['x1'], 'y1': object['y1'], 'x2': object['x2'], 'y2': object['y2']})
-        # Mark Frame as Processed
-        insert_processed_frame(conn, cursor, frame.frame_uuid, model_id)
-        socketio.send(json.dumps({'frame_number': frame.frame_number, 'image': processed_data_url, 'objects': scrubbed_objects}), to=task_id)
+        processed_frame = process_frame_helper(model, video, frame, object_detection_model)
+        socketio.send(json.dumps(processed_frame), to=task_id)
     # Mark as Complete
     with threading.Lock():
         tasks.remove(task_id)
     conn.close()
 
 # Make this not fetch the metadata and just have the previous function use it to share the code
-def process_single_frame(model_id, video_id, frame: Frame):
-    # Get Model Metadata
-    conn, cursor = db_connect()
-    res = get_model(conn, cursor, model_id)
-    if res.response.status != 'success':
-        conn.close()
-        return
-    model = res.model
-    # Get Video Metadata
-    res = get_video(conn, cursor, video_id)
-    if res.response.status != 'success':
-        conn.close()
-        return
-    video = res.video
-    # Load object detection model with model file
+def process_single_frame(model: Model, video: Videos, frame: Frame):
     object_detection_model = Yolo11s(model.model_url)
+    processed_frame = process_frame_helper(model, video, frame, object_detection_model)
+    return processed_frame
+
+def process_frame_helper(model: Model, video: Videos, frame: Frame, object_detection_model: ObjectDetectionModel):
     # Get Frame Image
     frame_image = get_frame_from_file(video.video_url, frame.frame_number)
     # Run predictions on frame
@@ -392,18 +352,25 @@ def process_single_frame(model_id, video_id, frame: Frame):
     processed_data_url = Base64_Transcoder.nparray_to_data_url(nparr_processed_frame)
     # Write detected objects to database
     objects = json.loads(object_detection_model.get_boxes_json())
-    scrubbed_objects = list[Object]()
+    converted_objects = list[Object]()
+    conn, cursor = db_connect(DATABASE)
     for object in objects:
-        insert_object_type(conn, cursor, object['class'], object['name'])
-        res = insert_object(conn, cursor, object['class'], frame.frame_uuid, model_id, object['confidence'], object['box']['x1'], object['box']['y1'], object['box']['x2'], object['box']['y2'])
-        if res != 'success':
+        #converted_objects.append({'type': object['name'], 'confidence': object['confidence'], 'x1': object['box']['x1'], 'y1': object['box']['y1'], 'x2': object['box']['x2'], 'y2': object['box']['y2']})
+        converted_objects.append(Object(object['name'], object['confidence'], object['box']['x1'], object['box']['y1'], object['box']['x2'], object['box']['y2'], object['class']))
+        insert_object_type(conn, cursor, model.model_uuid, object['class'], object['name'])
+        res = insert_object(conn, cursor, object['class'], frame.frame_uuid, model.model_uuid, object['confidence'], object['box']['x1'], object['box']['y1'], object['box']['x2'], object['box']['y2'])
+        if res.status != 'success':
+            print("Error inserting Object: ", res.message)
             continue
-        scrubbed_objects.append({'type': object['name'], 'confidence':object['confidence'], 'x1': object['x1'], 'y1': object['y1'], 'x2': object['x2'], 'y2': object['y2']})
     # Mark Frame as Processed
-    insert_processed_frame(conn, cursor, frame.frame_uuid, model_id)
-    return {'frame_number': frame.frame_number, 'image': processed_data_url, 'objects': scrubbed_objects}
-
-
+    res = insert_processed_frame(conn, cursor, frame.frame_uuid, model.model_uuid)
+    if res.status != 'success':
+        print("Error saving frame: ", res.message)
+    conn.close()
+    # Get Frame with boxes drawn
+    pframe = ProcessedFrame(frame.frame_uuid, video.video_uuid, model.model_uuid, frame.frame_number, converted_objects)
+    annotated_image = get_annotated_frame(pframe, frame_image)
+    return {'frame_num': frame.frame_number, 'image': Base64_Transcoder.nparray_to_data_url(annotated_image), 'objects': [vars(converted_object) for converted_object in converted_objects]}
 
 # ====================================== SocketIO Event Handlers ==============================================
 
@@ -457,9 +424,5 @@ def test_base64_transcoder(base64_image):
     emit(base64_response)
 
 if __name__ == '__main__':
-    conn, cursor = db_connect()
-    create_tables(conn, cursor)
-    insert_model(conn, cursor, 'default', "Default Ultralytics Yolo Model", "ai_modules/ob_detect_models/yolo11s.pt")
-    conn.close()
     socketio.run(app, host = hostname, port = port)
 
