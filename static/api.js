@@ -44,7 +44,6 @@ export async function fetchVideos() {
         // Convert each item into a Video object
         let videos = data.map(video => new Video(video.title, video.video_id));
 
-        console.log(videos);
         return videos;
 
     } catch (error) {
