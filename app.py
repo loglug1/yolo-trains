@@ -6,8 +6,8 @@ from flask_socketio import SocketIO, send, emit, join_room
 from ai_modules.abc_model import ObjectDetectionModel
 from ai_modules.yolo11s import Yolo11s
 from utilities.base64_transcoder import Base64_Transcoder
-from utilities.helper_functions import db_connect, get_sha256, get_num_frames, get_basename, get_frame_from_file, validate_extension, create_folder_when_missing, get_annotated_frame
-from db_connect.database import Videos, Frame, Object, Model, ProcessedFrame, get_unprocessed_frame_list, get_processed_frame_list_with_objects, get_video_list as db_get_video_list, get_model_list as db_get_model_list, insert_frame, insert_video, create_tables, insert_model, get_video, get_frame_list, get_frame_list_with_objects, get_model, insert_object, insert_object_type, get_processed_frame as db_get_processed_frame, insert_processed_frame, get_frame, get_processed_frame_with_objects, insert_frames
+from utilities.helper_functions import db_connect, get_sha256, get_num_frames, get_basename, get_frame_from_file, validate_extension, create_folder_when_missing, get_annotated_frame, get_hex_from_word
+from db_connect.database import Videos, Frame, Object, Model, ProcessedFrame, get_object_type_list_by_model_by_video, get_unprocessed_frame_list, get_processed_frame_list_with_objects, get_video_list as db_get_video_list, get_model_list as db_get_model_list, insert_frame, insert_video, create_tables, insert_model, get_video, get_frame_list, get_frame_list_with_objects, get_model, insert_object, insert_object_type, get_processed_frame as db_get_processed_frame, insert_processed_frame, get_frame, get_processed_frame_with_objects, insert_frames
 import argparse
 import uuid
 import threading
@@ -75,6 +75,7 @@ def upload_model():
             return "Invalid file extension", 400
         try:
             file_bytes = file.read()
+            file.seek(0)
             # Generate Metadata for model
             model_id = get_sha256(file_bytes)
             name = get_basename(file.filename)
@@ -166,6 +167,19 @@ def get_model_list():
         return jsonify(model_list), 200
     else:
         return res.response.message, 500
+    
+# Get list of object classes found in specific model/video
+@app.route('/objects/<model_id>/<video_id>', methods=['GET'])
+def fetch_object_types(model_id, video_id):
+    # Get object types from database
+    conn, cursor = db_connect(DATABASE)
+    res = get_object_type_list_by_model_by_video(conn, cursor, model_id, video_id)
+    conn.close()
+    if res.response.status != 'success':
+        return res.response.message, 500
+    # Return Object Types
+    model_list = [{'name': type.name, 'color': get_hex_from_word(type.name)} for type in res.object_types]
+    return jsonify(model_list), 200
 
 # Get All Unprocessed Frames for Video
 @app.route('/videos/<video_id>', methods=['GET'])
@@ -335,7 +349,6 @@ def _process_all_frames(model_id: str, video: Videos, frames: list[Frame], task_
         tasks.remove(task_id)
     conn.close()
 
-# Make this not fetch the metadata and just have the previous function use it to share the code
 def process_single_frame(model: Model, video: Videos, frame: Frame):
     object_detection_model = Yolo11s(model.model_url)
     processed_frame = process_frame_helper(model, video, frame, object_detection_model)

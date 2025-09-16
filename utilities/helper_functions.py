@@ -51,6 +51,13 @@ def get_color_from_word(word):
 
     return (int(digested_hash[0:2], 16), int(digested_hash[2:4], 16), int(digested_hash[4:6], 16))
 
+def get_hex_from_word(word):
+    # Hash the word to a hexadecimal string
+    hash_object = hashlib.md5(word.encode())
+    digested_hash = hash_object.hexdigest()
+
+    return f"#{digested_hash[0:6]}"
+
 # Function to draw objects onto frame
 def get_annotated_frame(processed_frame: ProcessedFrame, frame_img: numpy.ndarray) :
     if processed_frame.objects is None :

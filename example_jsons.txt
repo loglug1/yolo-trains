@@ -48,6 +48,13 @@
     "title": "Sad Model"
 }
 
+/objects/<model_id>/<video_id> GET
+[
+    {"color":"#90ad91","name":"frisbee"},
+    {"color":"#8b0a44","name":"person"},
+    {"color":"#843d3b","name":"wine glass"}
+]
+
 /models/<model_id>/<video_id> GET   // When using this endpoint, the frames do not return the images to save bandwidth
 {
     "connection_id": "connection-id", // Only if processing is actively in progress
