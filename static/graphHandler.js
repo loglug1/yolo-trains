@@ -34,7 +34,7 @@ export async function getFrames(videoId, modelId) {
                 )
             );
 
-            return new Frame(frameData.frame_num, objects);
+            return new Frame(frameData.frame_num, objects, frameData.connection_id);
         });
 
         console.log("Processed frames:", frameObjects);
@@ -88,9 +88,70 @@ document.addEventListener("DOMContentLoaded", () => {
     }
   });
 
-  
+  let socket = null;
+
+  // Function to initialize WebSocket connection
+  function initializeWebSocket(connectionId) {
+    // Use wss:// for secure connection or ws:// for local development
+    const wsProtocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+    socket = new WebSocket(`${wsProtocol}//${window.location.host}/ws/${connectionId}`);
+
+    socket.onopen = () => {
+      console.log(`WebSocket connected for connection ID: ${connectionId}`);
+    };
+
+    socket.onmessage = (event) => {
+      const frameData = JSON.parse(event.data);
+      console.log("Received WebSocket frame:", frameData);
+
+      // Process incoming frame
+      const objects = frameData.objects.map(obj => 
+        new DetectionObject(
+          obj.type,
+          obj.x1,
+          obj.x2,
+          obj.y1,
+          obj.y2,
+          obj.confidence
+        )
+      );
+
+      const frame = new Frame(frameData.frame_num, objects, frameData.connection_id);
+
+      // Update chart with new frame data
+      updateChartWithFrame(frame);
+    };
+
+    socket.onclose = () => {
+      console.log("WebSocket connection closed");
+    };
+
+    socket.onerror = (error) => {
+      console.error("WebSocket error:", error);
+    };
+  }
+
+  // Function to update chart with a single frame
+  function updateChartWithFrame(frame) {
+    if (!frame.objects.length) return;
+
+    const targetObjectType = tempScatterChart.data.datasets[0].label.split(' ')[0] || frame.objects[0].object_type;
+
+    frame.objects.forEach(obj => {
+      if (obj.object_type === targetObjectType) {
+        tempScatterChart.data.datasets[0].data.push({
+          x: frame.frame_num,
+          y: obj.confidence
+        });
+      }
+    });
+
+    // Sort data by frame number to ensure proper ordering
+    tempScatterChart.data.datasets[0].data.sort((a, b) => a.x - b.x);
+    tempScatterChart.update();
+  }
+
   // Fetch frames and plot data
-   
   async function addDataPoints() {
     const videoDropdown = document.getElementById("videoDropdown");
     const modelDropdown = document.getElementById("modelDropdown");
@@ -103,6 +164,11 @@ document.addEventListener("DOMContentLoaded", () => {
       return;
     }
 
+    // Reset existing data
+    tempScatterChart.data.datasets[0].data = [];
+    tempScatterChart.data.datasets[0].label = "Object confidence per frame";
+    tempScatterChart.update();
+
     // Fetch and process frames
     const frames = await getFrames(videoId, modelId);
 
@@ -112,6 +178,12 @@ document.addEventListener("DOMContentLoaded", () => {
     }
 
     console.log("Frames retrieved:", frames);
+
+    // Check for connection_id in any frame to initialize WebSocket
+    const frameWithConnectionId = frames.find(frame => frame.connection_id);
+    if (frameWithConnectionId) {
+      initializeWebSocket(frameWithConnectionId.connection_id);
+    }
 
     // Find the first object type in the first frame that has objects
     const firstFrameWithObjects = frames.find(frame => frame.objects.length > 0);
@@ -148,4 +220,3 @@ document.addEventListener("DOMContentLoaded", () => {
   // Attach the function to the button
   document.getElementById("addDataBtn").addEventListener("click", addDataPoints);
 });
-
