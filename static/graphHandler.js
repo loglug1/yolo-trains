@@ -98,9 +98,34 @@ document.addEventListener("DOMContentLoaded", () => {
             mode: 'xy',
           }
         }
+      },
+      onClick: (event,elements,chart) => {
+        const points = tempScatterChart.getElementsAtEventForMode(
+          event,
+          "nearest", // could also use "point"
+          { intersect: true }, // only fire if directly on a point
+          false
+        );
+
+          if (points.length) {
+            const firstPoint = points[0];
+            const datasetIndex = firstPoint.datasetIndex;
+            const index = firstPoint.index;
+            const value = tempScatterChart.data.datasets[datasetIndex].data[index];
+
+            console.log("Clicked point:", value); // {x: frame, y: confidence}
+
+            // Example: store or use the values
+            const frameCliked = value.x;
+            const confidenceClicked = value.y;
+        }
       }
     }
   });
+
+    document.getElementById('resetZoom').addEventListener('click', () => {
+      tempScatterChart.resetZoom();
+    });
 
   
   // Fetch frames and plot data

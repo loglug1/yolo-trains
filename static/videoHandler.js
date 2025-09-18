@@ -48,7 +48,7 @@ async function uploadVideo(){
   const result = await postVideo(file);
   console.log("Server response:", result);
   alert(`Server response: ${result}`);
-  populateDropdown();
+  populateVideoDropdown();
 }
 
 document.getElementById("uploadBtn").addEventListener("click",uploadVideo);
