@@ -54,7 +54,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
   // Create Chart.js line chart
   const tempScatterChart = new Chart(ctx, {
-    type: "line",
+    type: "scatter",
     data: {
       datasets: [
         {

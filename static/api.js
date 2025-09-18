@@ -44,7 +44,6 @@ export async function fetchVideos() {
         // Convert each item into a Video object
         let videos = data.map(video => new Video(video.title, video.video_id));
 
-        console.log(videos);
         return videos;
 
     } catch (error) {
@@ -65,7 +64,7 @@ export async function fetchModels() {
         const data = await response.json();
 
         // Convert each item into a Video object
-        let models = data.map(model => new Model(model.model_title, model.model_id));
+        let models = data.map(model => new Model(model.title, model.model_id));
 
         return models;
 
