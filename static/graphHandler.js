@@ -85,6 +85,20 @@ document.addEventListener("DOMContentLoaded", () => {
           max: 1 // confidence values are between 0 and 1
         }
       }
+      ,plugins: {
+        zoom: {
+          limits: {
+              x: {min: 0},
+              y: {min: 0, max: 1}
+          },
+          zoom: {
+            drag: {
+              enabled: true,
+            },
+            mode: 'xy',
+          }
+        }
+      }
     }
   });
 
