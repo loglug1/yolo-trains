@@ -1,6 +1,9 @@
 import { Video, Model, Frame, DetectionObject } from './Classes.js';
 import { fetchProcessing } from './api.js';
 
+//Global variable on window
+var frames = [];
+
 export async function getFrames(videoId, modelId) {
     if (!videoId || !modelId) {
         throw new Error("Both videoId and modelId are required.");
@@ -118,6 +121,8 @@ document.addEventListener("DOMContentLoaded", () => {
             // Example: store or use the values
             const frameCliked = value.x;
             const confidenceClicked = value.y;
+
+            findFrameFromPoint(frameCliked);
         }
       }
     }
@@ -143,7 +148,7 @@ document.addEventListener("DOMContentLoaded", () => {
     }
 
     // Fetch and process frames
-    const frames = await getFrames(videoId, modelId);
+    frames = await getFrames(videoId, modelId);
 
     if (frames.length === 0) {
       alert("No frames were returned from the server.");
@@ -187,4 +192,8 @@ document.addEventListener("DOMContentLoaded", () => {
   // Attach the function to the button
   document.getElementById("addDataBtn").addEventListener("click", addDataPoints);
 });
+
+function findFrameFromPoint(x){
+  console.log(frames[x]);
+}
 
