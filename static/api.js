@@ -92,20 +92,4 @@ export async function fetchProcessing(videoId,modelId){
     }
 }
 
-//HTTP Get request for /objects/model_id/video_id to populate the object filter dropdown 
-export async function fetchObjects(videoId,modelId){
-    try {
-        const response = await fetch(`/objects/${modelId}/${videoId}`, {methods: 'GET'});
-
-        if(!response.ok) {
-            throw new Error(`HTTP error! Status: ${response.status}`);
-        }
-        //Parse the JSON response
-        const data = await response.json();
-        
-        return data;
-    }catch(error){
-        console.error('Error fetching objects:', error);
-        return null;
-    }
-}
+//HTTP Get 
