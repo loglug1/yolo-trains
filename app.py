@@ -2,7 +2,7 @@ from flask import Flask, send_from_directory, request, jsonify
 from werkzeug.utils import secure_filename
 import cv2
 import os
-from flask_socketio import SocketIO, send, emit, join_room
+from flask_socketio import SocketIO, emit, join_room
 from ai_modules.abc_model import ObjectDetectionModel
 from ai_modules.yolo11s import Yolo11s
 from utilities.base64_transcoder import Base64_Transcoder
@@ -18,17 +18,20 @@ import json
 app = Flask(__name__)
 app.config['MAX_CONTENT_LENGTH'] = 2 * 1000 * 1000 * 1000 # 2GB max model file size
 
-parser = argparse.ArgumentParser(description='Run Railway Object Detection ')
+if __name__ == '__main__':
+    parser = argparse.ArgumentParser(description='Run Railway Object Detection ')
 
-parser.add_argument('--address', dest='hostname', default="localhost", help="Network interface to start the socketIO/webserver on.")
-parser.add_argument('--port', dest='port', default='5000', help="Specifies the port for the socketIO/web server to start on.")
-parser.add_argument('--uploads', dest='upload_path', default='uploads', help="Specifies path to store uploaded files.")
+    parser.add_argument('--address', dest='hostname', default="localhost", help="Network interface to start the socketIO/webserver on.")
+    parser.add_argument('--port', dest='port', default='5000', help="Specifies the port for the socketIO/web server to start on.")
+    parser.add_argument('--uploads', dest='upload_path', default='uploads', help="Specifies path to store uploaded files.")
 
-args = parser.parse_args()
+    args = parser.parse_args()
 
-hostname = args.hostname
-port = args.port
-upload_path = args.upload_path
+    hostname = args.hostname
+    port = args.port
+    upload_path = args.upload_path
+else:
+    upload_path = 'uploads'
 
 # Constants defining what file types can be uploaded
 ALLOWED_MODEL_EXTENSIONS = ['pt']
@@ -52,7 +55,8 @@ conn.close()
 
 tasks = list() # Used to keep track of tasks in progress
 
-socketio = SocketIO(app, cors_allowed_origins=["https://piehost.com",f"http://{hostname}:{port}"], max_http_buffer_size=10*1000000, async_mode='threading')
+# OLD_CORS=["https://piehost.com",f"http://{hostname}:{port}"]
+socketio = SocketIO(app, cors_allowed_origins='*', max_http_buffer_size=10*1000000, async_mode='threading')
 
 # ======================================== API ENDPOINTS =======================================
 
