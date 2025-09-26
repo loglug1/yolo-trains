@@ -56,7 +56,7 @@ conn.close()
 tasks = list() # Used to keep track of tasks in progress
 
 # OLD_CORS=["https://piehost.com",f"http://{hostname}:{port}"]
-socketio = SocketIO(app, cors_allowed_origins='*', max_http_buffer_size=10*1000000, async_mode='threading')
+socketio = SocketIO(app, cors_allowed_origins='*', max_http_buffer_size=10*1000000, async_mode='eventlet')
 
 # ======================================== API ENDPOINTS =======================================
 
@@ -214,7 +214,7 @@ def get_all_processed_frames(model_id, video_id):
     conn, cursor = db_connect(DATABASE)
     res = get_video(conn, cursor, video_id)
     conn.close()
-    if res.response.status != 'success':
+    if res.response.status != 'success' or "not found." in res.response.message:
         return res.response.message, 500
     video = res.video
     # Get Number of Frames in Video
@@ -231,8 +231,8 @@ def get_all_processed_frames(model_id, video_id):
     processed_frames = [frame.to_dict() for frame in res.processed_frames]
     # Check if task already exists for model/video combo
     task_id = str(uuid.uuid5(uuid.NAMESPACE_URL, model_id + video_id)) # Creates a deterministic UUID based on the model and video ids
-    with threading.Lock():
-        task_started = task_id in tasks # Boolean (separate from if statement so it can be in a threading.Lock())
+    #with threading.Lock():
+    task_started = task_id in tasks # Boolean (separate from if statement so it can be in a threading.Lock())
     if task_started:
         return {'connection_id': task_id, 'num_frames': num_frames, 'frames': processed_frames}, 200
     # Get Unprocessed Frames
@@ -332,10 +332,10 @@ def get_processed_frame_img_tag(model_id, video_id, frame_num):
 # ======================================== Frame Processing Functions ==========================================
 
 def _process_all_frames(model_id: str, video: Videos, frames: list[Frame], task_id: str):
-    with threading.Lock():
-        if task_id in tasks:
-            return
-        tasks.append(task_id) # Mark as active task for reconnection
+    #with threading.Lock():
+    if task_id in tasks:
+        return
+    tasks.append(task_id) # Mark as active task for reconnection
     # Get Model Metadata
     conn, cursor = db_connect(DATABASE)
     res = get_model(conn, cursor, model_id)
@@ -349,8 +349,8 @@ def _process_all_frames(model_id: str, video: Videos, frames: list[Frame], task_
         processed_frame = process_frame_helper(model, video, frame, object_detection_model)
         socketio.send(json.dumps(processed_frame), to=task_id)
     # Mark as Complete
-    with threading.Lock():
-        tasks.remove(task_id)
+    #with threading.Lock():
+    tasks.remove(task_id)
     conn.close()
 
 def process_single_frame(model: Model, video: Videos, frame: Frame):
