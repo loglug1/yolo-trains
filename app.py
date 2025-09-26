@@ -2,7 +2,7 @@ from flask import Flask, send_from_directory, request, jsonify
 from werkzeug.utils import secure_filename
 import cv2
 import os
-from flask_socketio import SocketIO, send, emit, join_room
+from flask_socketio import SocketIO, send, emit, join_room, leave_room
 from ai_modules.abc_model import ObjectDetectionModel
 from ai_modules.yolo11s import Yolo11s
 from utilities.base64_transcoder import Base64_Transcoder
@@ -389,7 +389,20 @@ def process_frame_helper(model: Model, video: Videos, frame: Frame, object_detec
 
 @socketio.on('join')
 def on_join(room_id):
+    print(f"Client joined {room_id}.")
     join_room(room_id)
+    send(f"Joined {room_id}.")
+    
+@socketio.on('leave')
+def on_leave(room_id):
+    print(f"Client left {room_id}.")
+    leave_room(room_id)
+    send(f"Left {room_id}.")
+
+@app.route('/test/socketio/<room_id>')
+def test_room_send(room_id):
+    socketio.send("Test message", to=room_id)
+    return '', 200
 
 # =========================================== MISC ===================================================
 
