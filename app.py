@@ -343,7 +343,7 @@ def _process_all_frames(model_id: str, video: Videos, frames: list[Frame], task_
     object_detection_model = Yolo11s(res.model.model_url)
     for frame in frames:
         processed_frame = process_frame_helper(model, video, frame, object_detection_model)
-        socketio.send(json.dumps(processed_frame), to=task_id)
+        socketio.emit('processed_frame', json.dumps(processed_frame), to=task_id)
     # Mark as Complete
     with threading.Lock():
         tasks.remove(task_id)
