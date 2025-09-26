@@ -10,6 +10,7 @@
     <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-zoom@2.0.1/dist/chartjs-plugin-zoom.min.js"></script>
     <script type="module" src="videoHandler.js"></script>
     <script type="module" src="graphHandler.js"></script>
+    <script type="module" src="dataPaneHandler.js"></script>
     <title>Train AI Tester</title>
   </head>
   <body>
@@ -20,6 +21,8 @@
         height="360"
         style="display: none"
       ></canvas>
+
+      <!-- Left side wrapper =================================================================================== -->
       <div class="left-side-panel-wrapper">
         <div class="video-controls-wrapper">
           <div class="video-inputs">
@@ -46,17 +49,25 @@
           <button id="resetZoom">Reset Zoom</button>
           <select id="objectTypeDropdown"></select>
         </div>
+
+        <div class="graph-wrapper">
+          <canvas id="tempScatterChart" width="640" height="360"></canvas>
+        </div>
       </div>
+
+      <!-- Right side wrapper =================================================================================== -->
       <div class="middle-panel-wrapper">
         <div class="video-wrapper">
-            <video id="videoPreview" width="640" height="360" controls></video>
             <img id="frame" />
         </div>
-        <div class="graph-wrapper">
-            <canvas id="tempScatterChart" width="640" height="360"></canvas>
+        <div id="video-data-pane-wrapper" class="video-data-pane-wrapper">
+          <h3>Data Pane</h3>
+          <p id="frame-num">Frame Num: </p>
+          <!-- Populate per object detected -->
+          <h5>Objects</h5>
+          <div id="object-list"></div>
         </div>
       </div>
-      <div class="video-data-pane-wrapper">Data Pane</div>
     
     </div>
   </body>
