@@ -61,14 +61,20 @@ export async function getFrames(videoId, modelId) {
 
 // ---- Socket Handling ----
   function setupLiveSocket(connectionId) {
-  if (socket) {
+    /*
+    if (socket) {
     socket.disconnect();
   }
+  */
 
   // Connect to backend Socket.IO
-  socket = io.connect("/", {
-    transports: ["websocket"], // Force WebSocket for reliability
-  });
+    if (!socket) {
+      socket = io.connect("/", {
+        transports: ["websocket"],
+      });
+    }
+  
+
 
   socket.on("connect", () => {
     console.log("Connected to live socket server.");
