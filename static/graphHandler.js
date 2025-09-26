@@ -47,7 +47,7 @@ export async function getFrames(videoId, modelId) {
           obj.confidence
         )
       );
-      return new Frame(frameData.frame_number, objects);
+      return new Frame(frameData.frame_num, objects);
     });
 
     console.log("Processed frames:", frameObjects);
@@ -132,7 +132,8 @@ function updateGraph(frameList, objectType) {
         }
       });
     });
-
+    
+    console.log("Updating graph with data:", filteredData);
     tempScatterChart.data.datasets[0].data = filteredData;
     tempScatterChart.data.datasets[0].label = `${objectType} Confidence per Frame`;
     tempScatterChart.update();
