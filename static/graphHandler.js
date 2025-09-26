@@ -1,5 +1,6 @@
 import { Video, Model, Frame, DetectionObject } from './Classes.js';
 import { fetchProcessing } from './api.js';
+import { updateDataPane } from './dataPaneHandler.js';
 
 var frames = [];
 var liveObjectTypes = new Set(); // To track unique object types in live mode
@@ -7,7 +8,9 @@ var currentObjectType = null;    // Currently selected object type
 var socket = null;               // Socket connection
 var tempScatterChart = null;
 
-export async function getFrames(videoId, modelId) {
+export let frameClicked;
+
+async function getFrames(videoId, modelId) {
   if (!videoId || !modelId) {
     throw new Error("Both videoId and modelId are required.");
   }
@@ -22,7 +25,6 @@ export async function getFrames(videoId, modelId) {
     }
 
     const connectionId = data.connection_id || null;
-
     // If connectionId exists, switch to live updates
     if (connectionId) {
       console.log("Live connection detected. Starting socket updates...");
@@ -60,7 +62,7 @@ export async function getFrames(videoId, modelId) {
 }
 
 // ---- Socket Handling ----
-  function setupLiveSocket(connectionId) {
+function setupLiveSocket(connectionId) {
   if (socket) {
     socket.disconnect();
   }
@@ -132,8 +134,6 @@ function updateGraph(frameList, objectType) {
         }
       });
     });
-    
-    console.log("Updating graph with data:", filteredData);
     tempScatterChart.data.datasets[0].data = filteredData;
     tempScatterChart.data.datasets[0].label = `${objectType} Confidence per Frame`;
     tempScatterChart.update();
@@ -157,6 +157,7 @@ function updateGraph(frameList, objectType) {
     }
 
     // Find first available object type
+    console.log(`frames for line 160: ${frames}`)
     const firstFrameWithObjects = frames.find(frame => frame.objects.length > 0);
     if (!firstFrameWithObjects) {
       alert("No objects found in any frame.");
@@ -164,6 +165,7 @@ function updateGraph(frameList, objectType) {
     }
 
     currentObjectType = firstFrameWithObjects.objects[0].object_type;
+    console.log(`frames: ${frames}`)
     updateGraph(frames, currentObjectType);
     populateDropdown(typeDropdown, frames);
   }
@@ -192,9 +194,13 @@ function updateGraph(frameList, objectType) {
 
   document.getElementById("addDataBtn").addEventListener("click", addDataPoints);
 
+  //=====Gets frame from point clicked========================
   function findFrameFromPoint(frameNum) {
+    const videoId = document.getElementById("videoDropdown").value;
+    const modelId = document.getElementById("modelDropdown").value;
     const frame = frames.find(f => f.frame_num === frameNum);
     console.log("Frame clicked:", frame);
+    updateDataPane(modelId,videoId,frame)
   }
 
 document.addEventListener("DOMContentLoaded", () => {
@@ -254,6 +260,7 @@ document.addEventListener("DOMContentLoaded", () => {
     }
   });
 
+  //Will reset the zoom of the graph
   document.getElementById('resetZoom').addEventListener('click', () => {
     tempScatterChart.resetZoom();
   });
