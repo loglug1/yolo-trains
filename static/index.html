@@ -4,13 +4,13 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <link rel="stylesheet" href="indexStyleSheet.css" />
-    <script
-      src="https://cdn.socket.io/4.8.1/socket.io.min.js"
-      integrity="sha384-mkQ3/7FUtcGyoppY6bz/PORYoGqOl7/aSUMn2ymDOJcapfS6PHqxhRTMh1RR0Q6+"
-      crossorigin="anonymous"
-    ></script>
+    <script src="https://cdn.socket.io/4.8.1/socket.io.min.js" integrity="sha384-mkQ3/7FUtcGyoppY6bz/PORYoGqOl7/aSUMn2ymDOJcapfS6PHqxhRTMh1RR0Q6+" crossorigin="anonymous"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-    <script src="graphHandler.js" defer></script>
+    <script src="https://cdn.jsdelivr.net/npm/hammerjs@2.0.8"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-zoom@2.0.1/dist/chartjs-plugin-zoom.min.js"></script>
+    <script type="module" src="videoHandler.js"></script>
+    <script type="module" src="graphHandler.js"></script>
+    <script type="module" src="dataPaneHandler.js"></script>
     <title>Train AI Tester</title>
   </head>
   <body>
@@ -21,36 +21,54 @@
         height="360"
         style="display: none"
       ></canvas>
+
+      <!-- Left side wrapper =================================================================================== -->
       <div class="left-side-panel-wrapper">
         <div class="video-controls-wrapper">
           <div class="video-inputs">
             <h3>Video Inputs</h3>
             <div class="file-input">
-              <label for="videoInput">File Input</label>
+              <label for="videoInput" id="videoLabel">File Input</label>
               <input type="file" id="videoInput" accept="video/*" />
+              <button id="uploadBtn">Upload</button>
             </div>
+            <select id="videoDropdown">
+              <label for="videoDropdown">Select video:</label>
+            </select>
           </div>
           <div class="model-inputs">
             <h3>Model Inputs</h3>
             <div class="model-input">Model File Input</div>
+            <select id="modelDropdown">
+              <label for="modelDropdown">Select model:</label>
+            </select>
           </div>
         </div>
         <div class="graph-controls-wrapper">
-          <button id="addDataBtn">Click Me</button>
+          <button id="addDataBtn">Generate Graph</button>
+          <button id="resetZoom">Reset Zoom</button>
+          <select id="objectTypeDropdown"></select>
+        </div>
+
+        <div class="graph-wrapper">
+          <canvas id="tempScatterChart" width="640" height="360"></canvas>
         </div>
       </div>
+
+      <!-- Right side wrapper =================================================================================== -->
       <div class="middle-panel-wrapper">
         <div class="video-wrapper">
-            <video id="videoPreview" width="640" height="360" controls></video>
             <img id="frame" />
         </div>
-        <div class="graph-wrapper">
-            <canvas id="tempScatterChart" width="640" height="360"></canvas>
+        <div id="video-data-pane-wrapper" class="video-data-pane-wrapper">
+          <h3>Data Pane</h3>
+          <p id="frame-num">Frame Num: </p>
+          <!-- Populate per object detected -->
+          <h5>Objects</h5>
+          <div id="object-list"></div>
         </div>
       </div>
-      <div class="video-data-pane-wrapper">Data Pane</div>
     
     </div>
-    <script src="videoHandler.js"></script>
   </body>
 </html>

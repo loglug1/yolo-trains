@@ -1,150 +1,104 @@
-class AnnotatedVideoPlayer {
-    constructor(imgID) {
-        this.frameQueue = [];
-        this.imgElement = document.getElementById(imgID)
-    }
+import { Video, Model, Frame, DetectionObject } from './Classes.js';
+import { postVideo, fetchVideos, fetchModels, fetchProcessing } from './api.js';
 
-    play() {
-        this.frameQueue = [];
-        const fps = 10; 
-        const interval = 1000 / fps;
-        var skippedFrames = 0;
-        this.annotatedPlayer = setInterval(() => {
-            if (this.frameQueue.length > 0) {
-                for (var i = 0; i <= skippedFrames && this.frameQueue.length > 0; i++) { // Display the number of skipped frames + the current frame
-                    console.log("displayed frame");
-                    this.imgElement.src = this.frameQueue.shift();
-                }
-            } else {
-                skippedFrames++;
-                console.log("queue empty");
-            }
-        }, interval);
-    }
-    
-    pause() {
-        clearInterval(this.annotatedPlayer);
-    }
 
-    clearQueue() {
-        this.frameQueue = [];
-    }
 
-    queueFrame(frame) {
-        this.frameQueue.push(frame);
-    }
+// const socket = io();
+
+// socket.on("connect", () => {
+//     console.log("Connected to server!");
+//     window.annotatedVideoPlayer = new AnnotatedVideoPlayer("frame");
+// });
+
+// socket.on("test_response", (data) => {
+//     console.log("Received Test Data: ", data);
+//     msElapsed = Date.now() - parseInt(data);
+//     console.log("Time elapsed: ", msElapsed);
+// });
+
+// socket.on("receive_annotated_frame", (dataURL) => {
+//     console.log("Received Frame");
+//     window.annotatedVideoPlayer.queueFrame(dataURL);
+// });
+
+// function predictObjects(dataUrl) {
+//     socket.emit("predict_objects", dataUrl);
+// }
+
+// Video File Change
+document.getElementById("videoInput").addEventListener("change", function() {
+  const label = document.getElementById("videoLabel");
+  if(this.files.length > 0){
+    //update label text to selected file name
+    label.textContent = this.files[0].name;
+  }else{
+    //Reset label if no file is selected
+    label.textContent = "File Input";
+  }
+})
+// Uploading video
+async function uploadVideo(){
+  const fileInput = document.getElementById("videoInput");
+  if (fileInput.files.length === 0){
+    alert("Please select a video file first.");
+    return;
+  }
+
+  const file = fileInput.files[0];
+  const result = await postVideo(file);
+  console.log("Server response:", result);
+  alert(`Server response: ${result}`);
+  populateVideoDropdown();
 }
 
-function sequenceTest() {
-    i = 0;
-    interval = 100;
-    sequence = setInterval(() => {
-        if (i < 20) {
-            console.log("run function pls");
-            testData = Date.now().toString();
-            console.log("Sending Test Data: ", testData);
-            socket.emit("test_socket", testData);
-            i++
-        } else {
-            clearInterval(sequence);
-        }
-    }, interval);
+document.getElementById("uploadBtn").addEventListener("click",uploadVideo);
+
+async function populateVideoDropdown() {
+    let videoArray = await fetchVideos();
+    const dropdown = document.getElementById('videoDropdown');
+
+    // Clear any existing options
+    dropdown.innerHTML = '';
+
+    // Add a default placeholder option
+    const defaultOption = document.createElement('option');
+    defaultOption.text = 'Select a video';
+    defaultOption.value = '';
+    dropdown.add(defaultOption);
+
+    // Add video options where both value and text are the title
+    videoArray.forEach(video => {
+        const option = document.createElement('option');
+        option.text = video.title;    // Displayed text
+        option.value = video.video_id;   // Underlying value
+        dropdown.add(option);
+    });
 }
-
-const socket = io();
-
-socket.on("connect", () => {
-    console.log("Connected to server!");
-    window.annotatedVideoPlayer = new AnnotatedVideoPlayer("frame");
-});
-
-socket.on("test_response", (data) => {
-    console.log("Received Test Data: ", data);
-    msElapsed = Date.now() - parseInt(data);
-    console.log("Time elapsed: ", msElapsed);
-});
-
-socket.on("receive_annotated_frame", (dataURL) => {
-    console.log("Received Frame");
-    window.annotatedVideoPlayer.queueFrame(dataURL);
-});
-
-function predictObjects(dataUrl) {
-    socket.emit("predict_objects", dataUrl);
-}
-
-const video = document.getElementById("videoPreview");
-const hiddenSourceCanvas = document.getElementById("hiddenSourceCanvas");
-const videoInput = document.getElementById("videoInput");
-var drawFrameInterval = Number();
-var videoURL = null;
-
-videoInput.addEventListener("change", function(event) { // Register event listener for when file is 'uploaded'
-    const file = event.target.files[0];
-    if (file) {
-        video.pause();
-        
-        clearInterval(drawFrameInterval);
-
-        URL.revokeObjectURL(videoURL);
-        videoURL = URL.createObjectURL(file);
-
-        video.src = videoURL;
-        video.playbackRate = 1.0;
-        video.play();
-    }
-});
-
-video.addEventListener("play",function() { // Register event listener for when video element is played
-    const ctx = hiddenSourceCanvas.getContext("2d");
-
-    // Set canvas size to match video resolution
-    hiddenSourceCanvas.width = 640;
-    hiddenSourceCanvas.height = 360;
-
-    // Capture frames at a steady rate (adjust FPS as needed)
-    const fps = 10; 
-    const interval = 1000 / fps;
-    drawFrameInterval = setInterval(() => {
-        if (!video.paused && !video.ended) {
-            ctx.drawImage(video, 0, 0, hiddenSourceCanvas.width, hiddenSourceCanvas.height);
-
-            // Convert to Base64 and display in <img>
-            const base64Image = hiddenSourceCanvas.toDataURL("image/webp");
-            predictObjects(base64Image)
-            //console.log(base64Image); // Logs the Base64 string                    
-        } else {
-	    console.log('paused');
-            window.annotatedVideoPlayer.pause();
-            clearInterval(drawFrameInterval);
-        }
-    }, interval);
-    window.annotatedVideoPlayer.play();
-});
 
 // Model File Change
-const modelFileInput = document.getElementById('modelFileInput');
 
-modelFileInput.addEventListener('change', () => {
-  const file = modelFileInput.files[0];
+async function populateModelDropdown() {
+    let modelArray = await fetchModels();
+    const dropdown = document.getElementById('modelDropdown');
 
-  if (file) {
-    const formData = new FormData();
-    formData.append('modelFile', file);
+    // Clear any existing options
+    dropdown.innerHTML = '';
 
-    fetch('/uploadModel', {
-      method: 'POST',
-      body: formData,
-    })
-    .then(response => {
-      if (response.ok) {
-        response.json().then(data => {alert(data['upload_status']);});
-      } else {
-        alert('File upload failed');
-      }
-    })
-    .catch(error => {
-      alert('Error uploading file:' + error);
+    // Add a default placeholder option
+    const defaultOption = document.createElement('option');
+    defaultOption.text = 'Select a model';
+    defaultOption.value = '';
+    dropdown.add(defaultOption);
+
+    // Add video options where both value and text are the title
+    modelArray.forEach(model => {
+        const option = document.createElement('option');
+        option.text = model.model_title;    // Displayed text
+        option.value = model.model_id;   // Underlying value
+        dropdown.add(option);
     });
-  }
-});
+}
+
+// Initialize on page load
+document.addEventListener('DOMContentLoaded', populateVideoDropdown);
+document.addEventListener('DOMContentLoaded', populateModelDropdown);
