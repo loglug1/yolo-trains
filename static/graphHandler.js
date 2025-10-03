@@ -83,11 +83,16 @@ async function getFrames(videoId, modelId) {
 
     // Join the task-specific room
     socket.emit("join", connectionId);
-    console.log(`Joined room: ${connectionId}`);
+    console.log(`Joining room: ${connectionId}...`);
   });
 
-  // Listen for incoming frames on the default 'message' event
+  // Listen for general messages from the server
   socket.on("message", (data) => {
+    console.log(`Message from the server: ${data}`);
+  });
+
+  // Listen for incoming frames on the 'processed_frame' event
+  socket.on("processed_frame", (data) => {
     try {
       const frameData = JSON.parse(data);
       console.log("Live frame received:", frameData);
