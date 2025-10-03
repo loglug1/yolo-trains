@@ -104,6 +104,14 @@ async function getFrames(videoId, modelId) {
       const newFrame = new Frame(frameData.frame_num, newObjects);
       frames.push(newFrame);
 
+      const liveImageCheckbox = document.getElementById("liveImageCheckbox");
+      if (liveImageCheckbox && liveImageCheckbox.checked) {
+        const imgElement = document.getElementById("frame");
+        if (imgElement) {
+          imgElement.src = frameData.image; // base64 image directly
+        }
+      }
+
       // Update object dropdown dynamically
       newObjects.forEach(obj => {
         if (!liveObjectTypes.has(obj.object_type)) {
