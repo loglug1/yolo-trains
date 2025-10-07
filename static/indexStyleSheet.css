@@ -1,6 +1,5 @@
-html{
-    width: 100%;
-    height: 100%;
+html,body{
+    height: 95%;
     background-color: white;
     /* border: 5px solid black; */
 }
@@ -10,6 +9,7 @@ html{
     display: flex;
     flex-direction: row;
     justify-content: space-evenly;
+    margin-top:1rem;
 }
 
 .video-wrapper{
@@ -57,9 +57,8 @@ html{
 .left-side-panel-wrapper{
     display:flex;
     flex-direction: column;
-    justify-content: flex-start;
+    justify-content: space-between;
     width:50%;
-    margin-top:1rem;
     margin-right: 1rem;
 }
 
@@ -98,7 +97,6 @@ html{
     flex-direction: column;
     justify-content: flex-start;
     width:50%;
-    margin-top:1rem;
     margin-left: 1rem;
 }
 
