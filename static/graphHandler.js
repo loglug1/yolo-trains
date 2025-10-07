@@ -242,9 +242,9 @@ document.addEventListener("DOMContentLoaded", () => {
       },
       plugins: {
         zoom: {
-          limits: { x: { min: 0 }, y: { min: 0, max: 1 } },
+          limits: { x: { min: 0}, y: { min: 0, max: frames.length + 1 } },
           zoom: {
-            drag: { enabled: true },
+            wheel: { enabled: true },
             mode: 'xy',
           }
         }
@@ -261,6 +261,7 @@ document.addEventListener("DOMContentLoaded", () => {
           const value = tempScatterChart.data.datasets[0].data[firstPoint.index];
           console.log("Clicked point:", value);
           findFrameFromPoint(value.x);
+          console.log(frames.length)
         }
       }
     }
