@@ -62,12 +62,10 @@ async function getFrames(videoId, modelId) {
 }
 
 // ---- Socket Handling ----
-  function setupLiveSocket(connectionId) {
-    /*
-    if (socket) {
+function setupLiveSocket(connectionId) {
+  if (socket) {
     socket.disconnect();
   }
-  */
 
   // Connect to backend Socket.IO
     if (!socket) {
@@ -206,6 +204,7 @@ function updateGraph(frameList, objectType) {
     const modelId = document.getElementById("modelDropdown").value;
     const frame = frames.find(f => f.frame_num === frameNum);
     console.log("Frame clicked:", frame);
+    frameClicked = frame;
     updateDataPane(modelId,videoId,frame)
   }
 
