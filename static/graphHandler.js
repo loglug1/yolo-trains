@@ -81,11 +81,16 @@ function setupLiveSocket(connectionId) {
 
     // Join the task-specific room
     socket.emit("join", connectionId);
-    console.log(`Joined room: ${connectionId}`);
+    console.log(`Joining room: ${connectionId}...`);
   });
 
-  // Listen for incoming frames on the default 'message' event
+  // Listen for general messages from the server
   socket.on("message", (data) => {
+    console.log(`Message from the server: ${data}`);
+  });
+
+  // Listen for incoming frames on the 'processed_frame' event
+  socket.on("processed_frame", (data) => {
     try {
       const frameData = JSON.parse(data);
       console.log("Live frame received:", frameData);
@@ -96,6 +101,14 @@ function setupLiveSocket(connectionId) {
 
       const newFrame = new Frame(frameData.frame_num, newObjects);
       frames.push(newFrame);
+
+      const liveImageCheckbox = document.getElementById("liveImageCheckbox");
+      if (liveImageCheckbox && liveImageCheckbox.checked) {
+        const imgElement = document.getElementById("frame");
+        if (imgElement) {
+          imgElement.src = frameData.image; // base64 image directly
+        }
+      }
 
       // Update object dropdown dynamically
       newObjects.forEach(obj => {
