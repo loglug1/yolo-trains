@@ -11,12 +11,9 @@ var tempScatterChart = null;
 export let frameClicked;
 
 async function getFrames(videoId, modelId) {
-  if (!videoId || !modelId) {
-    throw new Error("Both videoId and modelId are required.");
-  }
+  if (!videoId || !modelId) throw new Error("Both videoId and modelId are required.");
 
   try {
-    // Fetch initial processing data
     const data = await fetchProcessing(videoId, modelId);
 
     if (!data) {
@@ -24,35 +21,26 @@ async function getFrames(videoId, modelId) {
       return [];
     }
 
-    const connectionId = data.connection_id || null;
-    // If connectionId exists, switch to live updates
+    const { connection_id: connectionId, frames: processedFrames = [] } = data;
+
+    //Display any already processed frames
+    let frameObjects = [];
+    if (Array.isArray(processedFrames) && processedFrames.length > 0) {
+      frameObjects = processedFrames.map(frameData => {
+        const objects = frameData.objects.map(obj =>
+          new DetectionObject(obj.type, obj.x1, obj.x2, obj.y1, obj.y2, obj.confidence)
+        );
+        return new Frame(frameData.frame_num, objects);
+      });
+      console.log("Loaded processed frames:", frameObjects);
+    }
+
+    //If connectionId exists, start live updates
     if (connectionId) {
       console.log("Live connection detected. Starting socket updates...");
       setupLiveSocket(connectionId);
-      return []; // Don't return static frames yet, live mode will handle updates
     }
 
-    // Static mode: process returned frames
-    if (!Array.isArray(data.frames)) {
-      console.error("Invalid data format: 'frames' key missing or not an array.");
-      return [];
-    }
-
-    const frameObjects = data.frames.map(frameData => {
-      const objects = frameData.objects.map(obj =>
-        new DetectionObject(
-          obj.type,
-          obj.x1,
-          obj.x2,
-          obj.y1,
-          obj.y2,
-          obj.confidence
-        )
-      );
-      return new Frame(frameData.frame_num, objects);
-    });
-
-    console.log("Processed frames:", frameObjects);
     return frameObjects;
 
   } catch (error) {
@@ -61,20 +49,35 @@ async function getFrames(videoId, modelId) {
   }
 }
 
+
 // ---- Socket Handling ----
 function setupLiveSocket(connectionId) {
-  if (socket) {
-    socket.disconnect();
+  if (!connectionId) {
+    console.warn("No connection ID provided for live socket.");
+    return;
+  }
+
+  if (socket && socket.connected && socket.currentRoom) {
+    console.log("Leaving previous room...");
+    socket.emit("leave", socket.currentRoom);
+    socket.off("processed_frame");
+    socket.off("message");
+    socket.off("disconnect");
   }
 
   // Connect to backend Socket.IO
-    if (!socket) {
-      socket = io.connect("/", {
-        transports: ["websocket"],
-      });
-    }
+  if (!socket) {
+    socket = io.connect("/", {
+      transports: ["websocket"],
+    });
+  }
   
+  socket.currentRoom = connectionId;
 
+  if (socket.connected) {
+    console.log(`Already connected. Joining new room: ${connectionId}`);
+    socket.emit("join", connectionId);
+  }
 
   socket.on("connect", () => {
     console.log("Connected to live socket server.");
