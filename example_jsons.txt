@@ -187,6 +187,60 @@
     ]
 }
 
+/models/<model_id>/<video_id>/<frame_number>/history GET //This call does not include the model that is passed in, but does include all other processed models
+{
+  "frames": [
+    {
+      "frame_num": 1793,
+      "model_id": "0ebbc80d4a7680d14987a577cd21342b65ecfd94632bd9a8da63ae6417644ee1",
+      "objects": [
+        {
+          "class_id": 6,
+          "confidence": 0.83158,
+          "type": "train",
+          "x1": 88.92848,
+          "x2": 361.32446,
+          "y1": 112.07389,
+          "y2": 302.44995
+        },
+        {
+          "class_id": 6,
+          "confidence": 0.7606,
+          "type": "train",
+          "x1": 378.89847,
+          "x2": 719.51831,
+          "y1": 71.78275,
+          "y2": 352.84384
+        }
+      ]
+    },
+    {
+      "frame_num": 1793,
+      "model_id": "7bc158aa95c0ebfdd87f70f01653c1131b93e92522dbe15c228bcd742e773a24",
+      "objects": [
+        {
+          "class_id": 6,
+          "confidence": 0.92393,
+          "type": "train",
+          "x1": 375.34763,
+          "x2": 719.66107,
+          "y1": 90.67092,
+          "y2": 345.69095
+        },
+        {
+          "class_id": 6,
+          "confidence": 0.91693,
+          "type": "train",
+          "x1": 94.23566,
+          "x2": 363.69006,
+          "y1": 111.90681,
+          "y2": 298.16833
+        }
+      ]
+    }
+  ]
+}
+
 processed_frame SocketIO event
 {
     "frame_number": 0,

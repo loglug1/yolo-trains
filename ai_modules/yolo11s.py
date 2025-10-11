@@ -11,6 +11,7 @@ Description: Uses the abc_model class requirements to implement the yolo version
 from ai_modules.abc_model import ObjectDetectionModel
 from ultralytics import YOLO
 import numpy as np
+import os
 
 class Yolo11s(ObjectDetectionModel) :
 
@@ -23,7 +24,9 @@ class Yolo11s(ObjectDetectionModel) :
     self.model = YOLO(url)
 
   def predict_objects_in(self, image: np.ndarray) -> float :
-    generator = self.model.predict(image, verbose=False, stream=True)
+    gpu_device = os.environ.get('HIP_VISIBLE_DEVICES', 'cpu')
+    print("Using GPU: ", gpu_device)
+    generator = self.model.predict(image, verbose=False, stream=True, device=gpu_device)
     self.result = next(generator)
     speed_dict = self.result.speed
     speed = 0.0

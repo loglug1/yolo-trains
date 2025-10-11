@@ -7,7 +7,7 @@ from ai_modules.abc_model import ObjectDetectionModel
 from ai_modules.yolo11s import Yolo11s
 from utilities.base64_transcoder import Base64_Transcoder
 from utilities.helper_functions import db_connect, get_sha256, get_num_frames, get_basename, get_frame_from_file, validate_extension, create_folder_when_missing, get_annotated_frame, get_hex_from_word
-from db_connect.database import Videos, Frame, Object, Model, ProcessedFrame, get_object_type_list_by_model_by_video, get_unprocessed_frame_list, get_processed_frame_list_with_objects, get_video_list as db_get_video_list, get_model_list as db_get_model_list, insert_frame, insert_video, create_tables, insert_model, get_video, get_frame_list, get_frame_list_with_objects, get_model, insert_object, insert_object_type, get_processed_frame as db_get_processed_frame, insert_processed_frame, get_frame, get_processed_frame_with_objects, insert_frames
+from db_connect.database import Videos, Frame, Object, Model, ProcessedFrame, get_object_type_list_by_model_by_video, get_unprocessed_frame_list, get_processed_frame_list_with_objects, get_video_list as db_get_video_list, get_model_list as db_get_model_list, insert_frame, insert_video, create_tables, insert_model, get_video, get_frame_list, get_frame_list_with_objects, get_model, insert_object, insert_object_type, get_processed_frame as db_get_processed_frame, insert_processed_frame, get_frame, get_processed_frame_with_objects, insert_frames, get_processed_frame_history_with_objects
 import argparse
 import uuid
 import threading
@@ -323,7 +323,17 @@ def get_processed_frame_img_tag(model_id, video_id, frame_num):
     print("Returning freshly processed frame")
     processed_frame = process_single_frame(model, video, res.frame)
     return f"<img src='{processed_frame['image']}' alt='fake alt' />", 200
-    
+
+# Get Specific Processed Frame History
+@app.route('/models/<model_id>/<video_id>/<int:frame_num>/history', methods=['GET']) 
+def get_frame_prediction_history(model_id, video_id, frame_num):
+    conn, cursor = db_connect(DATABASE)
+    res = get_processed_frame_history_with_objects(conn, cursor, video_id, model_id, frame_num)
+    conn.close()
+    if res.response.status != 'success':
+        return res.response.message, 500
+    processed_frames = [frame.to_dict() for frame in res.processed_frames]
+    return {'frames': processed_frames}, 200
 
 # ======================================== Frame Processing Functions ==========================================
 
