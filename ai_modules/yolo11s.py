@@ -18,15 +18,15 @@ class Yolo11s(ObjectDetectionModel) :
   def __init__(self, model_path = "ai_modules/ob_detect_models/yolo11s.pt") :
     self.model = YOLO(model_path)
     self.results = None
+    self.gpu_device = os.environ.get('HIP_VISIBLE_DEVICES', 'cpu')
+    print("Using GPU: ", self.gpu_device)
 
   def set_model_path(self, url) :
     print("This function is depricated. Pass model into initializer instead.")
     self.model = YOLO(url)
 
   def predict_objects_in(self, image: np.ndarray) -> float :
-    gpu_device = os.environ.get('HIP_VISIBLE_DEVICES', 'cpu')
-    print("Using GPU: ", gpu_device)
-    generator = self.model.predict(image, verbose=False, stream=True, device=gpu_device)
+    generator = self.model.predict(image, verbose=False, stream=True, device=self.gpu_device)
     self.result = next(generator)
     speed_dict = self.result.speed
     speed = 0.0
