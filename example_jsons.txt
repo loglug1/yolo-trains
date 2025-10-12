@@ -187,7 +187,10 @@
     ]
 }
 
-/models/<model_id>/<video_id>/<frame_number>/history GET //This call does not include the model that is passed in, but does include all other processed models
+/models/<model_id>/<video_id>/<frame_number>/history GET
+
+//This call does not include the model that is passed in, but does include all other processed models
+//You can also trick it to include all models if you put in a nonexistent model id
 {
   "frames": [
     {
