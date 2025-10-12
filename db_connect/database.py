@@ -561,6 +561,15 @@ class ProcessedFrame:
   def to_dict(self) -> dict:
     frame_dict = {'frame_num': self.frame_number, 'objects': [o.__dict__ for o in self.objects], 'model_id': self.model_uuid}
     return frame_dict
+  
+class HistoricProcessedFrame(ProcessedFrame):
+  def __init__(self, frame_uuid: str, video_uuid: str, model_uuid: str, frame_number: int, model_name: str, objects: list[Object] = None) :
+    super().__init__(frame_uuid, video_uuid, model_uuid, frame_number, objects)
+    self.model_name = model_name
+  
+  def to_dict(self) -> dict:
+    frame_dict = {'frame_num': self.frame_number, 'objects': [o.__dict__ for o in self.objects], 'model_id': self.model_uuid, 'model_name': self.model_name}
+    return frame_dict
 
 class ProcessedFrameResponse:
   def __init__(self, response: Response, processed_frame: ProcessedFrame) :
@@ -685,7 +694,7 @@ def get_processed_frame_history_with_objects(conn, cursor, video_uuid: str, mode
   try : 
     cursor.execute("""
       SELECT f.frame_uuid, f.video_uuid, pf.model_uuid, f.frame_number,
-        ot.name, o.model_uuid, o.confidence, o.x1, o.y1, o.x2, o.y2, ot.class_id
+        ot.name, o.model_uuid, o.confidence, o.x1, o.y1, o.x2, o.y2, ot.class_id, m.title
       FROM frames f
       LEFT JOIN processed_frames pf 
         ON f.frame_uuid = pf.frame_uuid
@@ -693,6 +702,8 @@ def get_processed_frame_history_with_objects(conn, cursor, video_uuid: str, mode
         ON f.frame_uuid = o.frame_uuid AND pf.model_uuid = o.model_uuid
       LEFT JOIN object_types ot 
         ON o.type_id = ot.id
+      LEFT JOIN models m
+        ON m.model_uuid = pf.model_uuid
       WHERE f.video_uuid = ? AND pf.model_uuid != ? AND f.frame_number = ?
     """, (video_uuid, model_uuid, frame_num))
     rows = cursor.fetchall()
@@ -701,7 +712,7 @@ def get_processed_frame_history_with_objects(conn, cursor, video_uuid: str, mode
       for row in rows:
         model_uuid = row[2]
         if model_uuid not in frames_dict :
-          frames_dict[model_uuid] = ProcessedFrame(frame_uuid=row[0], video_uuid=row[1], model_uuid=row[2], frame_number=row[3])
+          frames_dict[model_uuid] = HistoricProcessedFrame(frame_uuid=row[0], video_uuid=row[1], model_uuid=row[2], frame_number=row[3], model_name=row[12])
         if row[5] is not None:
           obj = Object(type=row[4], confidence=row[6], x1=row[7], y1=row[8], x2=row[9], y2=row[10], class_id=row[11])
           frames_dict[model_uuid].add_object(obj)

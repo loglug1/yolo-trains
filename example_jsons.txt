@@ -193,6 +193,7 @@
     {
       "frame_num": 1793,
       "model_id": "0ebbc80d4a7680d14987a577cd21342b65ecfd94632bd9a8da63ae6417644ee1",
+      "model_name": "yolo11n",
       "objects": [
         {
           "class_id": 6,
@@ -217,6 +218,7 @@
     {
       "frame_num": 1793,
       "model_id": "7bc158aa95c0ebfdd87f70f01653c1131b93e92522dbe15c228bcd742e773a24",
+      "model_name": "yolo11x",
       "objects": [
         {
           "class_id": 6,
@@ -235,8 +237,14 @@
           "x2": 363.69006,
           "y1": 111.90681,
           "y2": 298.16833
-        }
+        },
       ]
+    },
+    {
+      "frame_num": 1793,
+      "model_id": "e5f4edabd59fae3eb4b88020417438d95516deaa235c8e947374eb4193d43a47",
+      "model_name": "ppe-detection",
+      "objects": []
     }
   ]
 }
