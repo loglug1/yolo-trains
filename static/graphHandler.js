@@ -146,18 +146,29 @@ function setupLiveSocket(connectionId) {
 }
 
 function updateGraph(frameList, objectType) {
-    const filteredData = [];
-    frameList.forEach(frame => {
-      frame.objects.forEach(obj => {
-        if (obj.object_type === objectType) {
-          filteredData.push({ x: frame.frame_num, y: obj.confidence });
-        }
-      });
+  const threshold = parseFloat(document.getElementById('thresholdinput').value) || 0; // fallback
+  const filteredData = [];
+
+  frameList.forEach(frame => {
+    frame.objects.forEach(obj => {
+      if (obj.object_type === objectType && obj.confidence >= threshold) {
+        filteredData.push({ x: frame.frame_num, y: obj.confidence });
+      }
     });
-    tempScatterChart.data.datasets[0].data = filteredData;
-    tempScatterChart.data.datasets[0].label = `${objectType} Confidence per Frame`;
-    tempScatterChart.update();
-  }
+  });
+
+  tempScatterChart.data.datasets[0].data = filteredData;
+  tempScatterChart.data.datasets[0].label = `${objectType} Confidence per Frame (≥ ${threshold})`;
+  tempScatterChart.update();
+}
+
+// Attach listener for live threshold updates
+const thresholdInput = document.getElementById('thresholdinput');
+thresholdInput.addEventListener('input', () => {
+  // Make sure frameList and objectType are accessible here (you may have them as globals or from current context)
+  updateGraph(frames, currentObjectType);
+});
+
 
   // Fetch and plot frames
   async function addDataPoints() {
