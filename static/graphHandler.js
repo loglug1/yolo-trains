@@ -146,10 +146,14 @@ function setupLiveSocket(connectionId) {
 }
 
 function updateGraph(frameList, objectType) {
-  const threshold = parseFloat(document.getElementById('thresholdinput').value) || 0; // fallback
+  const threshold = parseFloat(document.getElementById('thresholdinput').value) || 0;
+  const frameInterval = parseInt(document.getElementById('frameIntervalInput').value) || 1;
   const filteredData = [];
 
   frameList.forEach(frame => {
+    // Apply both filters: confidence + every Nth frame
+    if (frame.frame_num % frameInterval !== 0) return;
+
     frame.objects.forEach(obj => {
       if (obj.object_type === objectType && obj.confidence >= threshold) {
         filteredData.push({ x: frame.frame_num, y: obj.confidence });
@@ -166,6 +170,11 @@ function updateGraph(frameList, objectType) {
 const thresholdInput = document.getElementById('thresholdinput');
 thresholdInput.addEventListener('input', () => {
   // Make sure frameList and objectType are accessible here (you may have them as globals or from current context)
+  updateGraph(frames, currentObjectType);
+});
+
+const frameIntervalInput = document.getElementById('frameIntervalInput');
+frameIntervalInput.addEventListener('input', () => {
   updateGraph(frames, currentObjectType);
 });
 
