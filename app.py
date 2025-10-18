@@ -1,3 +1,6 @@
+from concurrent.futures import ProcessPoolExecutor
+import eventlet
+eventlet.monkey_patch() # THIS MUST BE BEFORE ALL OTHER IMPORTS DO NOT MOVE OR ADD ABOVE
 from flask import Flask, send_from_directory, request, jsonify
 from werkzeug.utils import secure_filename
 import cv2
@@ -6,29 +9,56 @@ from flask_socketio import SocketIO, send, emit, join_room, leave_room
 from ai_modules.abc_model import ObjectDetectionModel
 from ai_modules.yolo11s import Yolo11s
 from utilities.base64_transcoder import Base64_Transcoder
-from utilities.helper_functions import db_connect, get_sha256, get_num_frames, get_basename, get_frame_from_file, validate_extension, create_folder_when_missing, get_annotated_frame, get_hex_from_word
-from db_connect.database import Videos, Frame, Object, Model, ProcessedFrame, get_object_type_list_by_model_by_video, get_unprocessed_frame_list, get_processed_frame_list_with_objects, get_video_list as db_get_video_list, get_model_list as db_get_model_list, insert_frame, insert_video, create_tables, insert_model, get_video, get_frame_list, get_frame_list_with_objects, get_model, insert_object, insert_object_type, get_processed_frame as db_get_processed_frame, insert_processed_frame, get_frame, get_processed_frame_with_objects, insert_frames, get_processed_frame_history_with_objects
-import argparse
+from utilities.helper_functions import (
+    db_connect, 
+    get_sha256, 
+    get_num_frames, 
+    get_basename, 
+    get_frame_from_file, 
+    validate_extension, 
+    create_folder_when_missing, 
+    get_annotated_frame, 
+    get_hex_from_word
+    )
+from utilities.redis_conector import TaskManager
+from db_connect.database import (
+    Videos, 
+    Frame, 
+    Object, 
+    Model, 
+    ProcessedFrame, 
+    create_tables, 
+    get_object_type_list_by_model_by_video, 
+    get_unprocessed_frame_list, 
+    get_processed_frame_list_with_objects, 
+    get_video_list as db_get_video_list, 
+    get_model_list as db_get_model_list, 
+    insert_video, 
+    insert_model, 
+    get_video, 
+    get_frame_list, 
+    get_model, 
+    insert_object, 
+    insert_object_type, 
+    insert_processed_frame, 
+    get_frame, 
+    get_processed_frame_with_objects, 
+    insert_frames, 
+    get_processed_frame_history_with_objects
+)
 import uuid
-import threading
 import json
-#from ai_modules.tensorflow import TensorFlowModel
 
 # Defines this file for flask as the WSGI app
 app = Flask(__name__)
-app.config['MAX_CONTENT_LENGTH'] = 2 * 1000 * 1000 * 1000 # 2GB max model file size
+app.config['MAX_CONTENT_LENGTH'] = 2 * 1000 * 1000 * 1000 # 2GB max file upload size
 
-parser = argparse.ArgumentParser(description='Run Railway Object Detection ')
+hostname = os.environ.get('ROD_HOSTNAME', 'localhost')
+port = int(os.environ.get('ROD_PORT', '5000'))
+upload_path = os.environ.get('ROD_UPLOADS', 'uploads')
 
-parser.add_argument('--address', dest='hostname', default="localhost", help="Network interface to start the socketIO/webserver on.")
-parser.add_argument('--port', dest='port', default='5000', help="Specifies the port for the socketIO/web server to start on.")
-parser.add_argument('--uploads', dest='upload_path', default='uploads', help="Specifies path to store uploaded files.")
-
-args = parser.parse_args()
-
-hostname = args.hostname
-port = args.port
-upload_path = args.upload_path
+redis_host = os.environ.get('REDIS_HOST', 'localhost')
+redis_port = int(os.environ.get('REDIS_PORT', '6379'))
 
 # Constants defining what file types can be uploaded
 ALLOWED_MODEL_EXTENSIONS = ['pt']
@@ -50,9 +80,9 @@ create_tables(conn, cursor)
 insert_model(conn, cursor, 'default', "Default Ultralytics Yolo Model", "ai_modules/ob_detect_models/yolo11s.pt")
 conn.close()
 
-tasks = list() # Used to keep track of tasks in progress
+task_manager = TaskManager() # Used to keep track of tasks in progress
 
-socketio = SocketIO(app, cors_allowed_origins=["https://piehost.com",f"http://{hostname}:{port}"], max_http_buffer_size=10*1000000, async_mode='threading')
+socketio = SocketIO(app, cors_allowed_origins=["https://piehost.com",f"http://{hostname}:{port}"], max_http_buffer_size=10*1000000)
 
 # ======================================== API ENDPOINTS =======================================
 
@@ -227,9 +257,7 @@ def get_all_processed_frames(model_id, video_id):
     processed_frames = [frame.to_dict() for frame in res.processed_frames]
     # Check if task already exists for model/video combo
     task_id = str(uuid.uuid5(uuid.NAMESPACE_URL, model_id + video_id)) # Creates a deterministic UUID based on the model and video ids
-    with threading.Lock():
-        task_started = task_id in tasks # Boolean (separate from if statement so it can be in a threading.Lock())
-    if task_started:
+    if task_manager.task_status(task_id):
         return {'connection_id': task_id, 'num_frames': num_frames, 'frames': processed_frames}, 200
     # Get Unprocessed Frames
     conn, cursor = db_connect(DATABASE)
@@ -240,7 +268,7 @@ def get_all_processed_frames(model_id, video_id):
     unprocessed_frames = res.frames
     # If there are unprocessed frames left, start the subroutine
     if len(unprocessed_frames) > 0:
-        if not task_started:
+        if not task_manager.task_status(task_id):
             socketio.start_background_task(_process_all_frames, model_id, video, unprocessed_frames, task_id)
         return {'connection_id': task_id, 'num_frames': num_frames, 'frames': processed_frames}, 200
     return {'num_frames': num_frames, 'frames': processed_frames}, 200
@@ -338,10 +366,8 @@ def get_frame_prediction_history(model_id, video_id, frame_num):
 # ======================================== Frame Processing Functions ==========================================
 
 def _process_all_frames(model_id: str, video: Videos, frames: list[Frame], task_id: str):
-    with threading.Lock():
-        if task_id in tasks:
-            return
-        tasks.append(task_id) # Mark as active task for reconnection
+    if not task_manager.start_task(task_id):
+        return
     # Get Model Metadata
     conn, cursor = db_connect(DATABASE)
     res = get_model(conn, cursor, model_id)
@@ -354,9 +380,9 @@ def _process_all_frames(model_id: str, video: Videos, frames: list[Frame], task_
     for frame in frames:
         processed_frame = process_frame_helper(model, video, frame, object_detection_model)
         socketio.emit('processed_frame', json.dumps(processed_frame), to=task_id)
+        task_manager.renew_task(task_id)
     # Mark as Complete
-    with threading.Lock():
-        tasks.remove(task_id)
+    task_manager.end_task(task_id)
     conn.close()
 
 def process_single_frame(model: Model, video: Videos, frame: Frame):
@@ -461,4 +487,3 @@ def test_base64_transcoder(base64_image):
 
 if __name__ == '__main__':
     socketio.run(app, host = hostname, port = port)
-
