@@ -26,7 +26,7 @@ class Yolo11s(ObjectDetectionModel) :
     self.model = YOLO(url)
 
   def predict_objects_in(self, image: np.ndarray) -> float :
-    generator = self.model.predict(image, verbose=False, stream=True, device=self.gpu_device)
+    generator = self.model.predict(image, verbose=False, stream=True, device=self.gpu_device, conf=0.01)
     self.result = next(generator)
     speed_dict = self.result.speed
     speed = 0.0
