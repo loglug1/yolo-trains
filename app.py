@@ -8,6 +8,7 @@ from ai_modules.yolo11s import Yolo11s
 from utilities.base64_transcoder import Base64_Transcoder
 from utilities.helper_functions import db_connect, get_sha256, get_num_frames, get_basename, get_frame_from_file, validate_extension, create_folder_when_missing, get_annotated_frame, get_hex_from_word
 from db_connect.database import Videos, Frame, Object, Model, ProcessedFrame, get_object_type_list_by_model_by_video, get_unprocessed_frame_list, get_processed_frame_list_with_objects, get_video_list as db_get_video_list, get_model_list as db_get_model_list, insert_frame, insert_video, create_tables, insert_model, get_video, get_frame_list, get_frame_list_with_objects, get_model, insert_object, insert_object_type, get_processed_frame as db_get_processed_frame, insert_processed_frame, get_frame, get_processed_frame_with_objects, insert_frames, get_processed_frame_history_with_objects
+#from db_connect.influx import influx_connect, insert_objects_influx
 import argparse
 import uuid
 import threading
@@ -385,6 +386,8 @@ def process_frame_helper(model: Model, video: Videos, frame: Frame, object_detec
         if res.status != 'success':
             print("Error inserting Object: ", res.message)
             continue
+    #client, writer = influx_connect("token", "org", "url") # requires you to make a bucket and all of this information, may be able to do this with docker container
+    #insert_objects_influx(client, writer, "bucket", model, video, frame, objects)
     # Mark Frame as Processed
     res = insert_processed_frame(conn, cursor, frame.frame_uuid, model.model_uuid)
     if res.status != 'success':
