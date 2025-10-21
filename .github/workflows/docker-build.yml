@@ -15,7 +15,7 @@ jobs:
           - tag_prefix: amd
             dockerfile_path: ./Dockerfile_amd
           - tag_prefix: nvidia
-            dockerfile_path: .Dockerfile_nvidia
+            dockerfile_path: ./Dockerfile_nvidia
 
     steps:
     - name: Checkout repository
