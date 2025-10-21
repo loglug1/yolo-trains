@@ -27,4 +27,4 @@ jobs:
         push: true # Set to true to push the image to the registry
         tags: |
           ${{ secrets.DOCKER_USERNAME }}/rod:amd-latest
-          ${{ secrets.DOCKER_USERNAME }}/your-image-name:amd-${{ github.sha }} # Tag with commit SHA
+          ${{ secrets.DOCKER_USERNAME }}/rod:amd-${{ github.sha }} # Tag with commit SHA
