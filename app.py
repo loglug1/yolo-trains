@@ -9,6 +9,7 @@ from utilities.base64_transcoder import Base64_Transcoder
 from utilities.helper_functions import db_connect, get_sha256, get_num_frames, get_basename, get_frame_from_file, validate_extension, create_folder_when_missing, get_annotated_frame, get_hex_from_word
 from db_connect.database import Videos, Frame, Object, Model, ProcessedFrame, get_object_type_list_by_model_by_video, get_unprocessed_frame_list, get_processed_frame_list_with_objects, get_video_list as db_get_video_list, get_model_list as db_get_model_list, insert_frame, insert_video, create_tables, insert_model, get_video, get_frame_list, get_frame_list_with_objects, get_model, insert_object, insert_object_type, get_processed_frame as db_get_processed_frame, insert_processed_frame, get_frame, get_processed_frame_with_objects, insert_frames, get_processed_frame_history_with_objects
 #from db_connect.influx import influx_connect, insert_objects_influx
+from utilities.secrets_handler import read_secret
 import argparse
 import uuid
 import threading
@@ -19,17 +20,31 @@ import json
 app = Flask(__name__)
 app.config['MAX_CONTENT_LENGTH'] = 2 * 1000 * 1000 * 1000 # 2GB max model file size
 
+# Environment Variables are prefered way to configure program
+hostname = os.environ.get('ROD_HOSTNAME', 'localhost')
+port = os.environ.get('ROD_PORT', '5000')
+upload_path = os.environ.get('ROD_DATA_PATH', 'uploads')
+
+# Arg parser for legacy support
 parser = argparse.ArgumentParser(description='Run Railway Object Detection ')
-
-parser.add_argument('--address', dest='hostname', default="localhost", help="Network interface to start the socketIO/webserver on.")
-parser.add_argument('--port', dest='port', default='5000', help="Specifies the port for the socketIO/web server to start on.")
-parser.add_argument('--uploads', dest='upload_path', default='uploads', help="Specifies path to store uploaded files.")
-
+parser.add_argument('--address', dest='hostname', default=hostname, help="Network interface to start the socketIO/webserver on.")
+parser.add_argument('--port', dest='port', default=port, help="Specifies the port for the socketIO/web server to start on.")
+parser.add_argument('--uploads', dest='upload_path', default=upload_path, help="Specifies path to store uploaded files.")
 args = parser.parse_args()
+hostname = args.hostname
+port = args.port
+upload_path = args.upload_path
 
-hostname = os.environ.get('ROD_HOSTNAME', args.hostname)
-port = os.environ.get('ROD_PORT', args.port)
-upload_path = os.environ.get('ROD_DATA_PATH', args.upload_path)
+# Get Influx Config from Environment
+influxdb_token = os.environ.get('INFLUXDB_TOKEN', '')
+influxdb_org = os.environ.get('INFLUXDB_ORG', '')
+influxdb_url = os.environ.get('INFLUXDB_URL', '')
+influxdb_bucket = os.environ.get('INFLUXDB_BUCKET', '')
+
+# Read Influx Token from secret file if desired
+influxdb_token_secret = read_secret(os.environ.get('INFLUXDB_TOKEN_FILE', ''))
+if influxdb_token_secret is not None:
+    influxdb_token = influxdb_token_secret
 
 # Constants defining what file types can be uploaded
 ALLOWED_MODEL_EXTENSIONS = ['pt']
