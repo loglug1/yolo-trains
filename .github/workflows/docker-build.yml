@@ -28,3 +28,5 @@ jobs:
         tags: |
           ${{ secrets.DOCKER_USERNAME }}/rod:amd-latest
           ${{ secrets.DOCKER_USERNAME }}/rod:amd-${{ github.sha }}
+        cache-from: type=registry,ref=${{ secrets.DOCKER_USERNAME }}/rod:amd-latest
+        cache-to: type=inline
