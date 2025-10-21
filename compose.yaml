@@ -19,7 +19,7 @@ services:
         source: influxdb2-config
         target: /etc/influxdb2
   rod:
-    image: rod:amd-test
+    image: loglug/rod:amd-latest
     ports:
       - 5000:5000
     environment:
