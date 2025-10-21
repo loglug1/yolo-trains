@@ -1,7 +1,7 @@
 from influxdb_client import InfluxDBClient, Point
 from influxdb_client.client.write_api import SYNCHRONOUS, WritePrecision
 from datetime import datetime, UTC
-from database import Response, Model, Videos, Frame, Object
+from db_connect.database import Response, Model, Videos, Frame, Object
 
 def influx_connect(token, org, url):
   client = InfluxDBClient(url=url, token=token, org=org)

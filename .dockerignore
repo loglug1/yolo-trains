@@ -1,0 +1,14 @@
+__pycache__/
+.vscode/
+test_images/
+test_videos/
+uploads/
+.dockerignore
+.gitignore
+compose.yaml
+Dockerfile*
+example_jsons.txt
+LICENSE
+README.md
+test_yolo_b64.py
+yolo_cli.py

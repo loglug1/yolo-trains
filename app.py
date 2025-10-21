@@ -27,9 +27,9 @@ parser.add_argument('--uploads', dest='upload_path', default='uploads', help="Sp
 
 args = parser.parse_args()
 
-hostname = args.hostname
-port = args.port
-upload_path = args.upload_path
+hostname = os.environ.get('ROD_HOSTNAME', args.hostname)
+port = os.environ.get('ROD_PORT', args.port)
+upload_path = os.environ.get('ROD_DATA_PATH', args.upload_path)
 
 # Constants defining what file types can be uploaded
 ALLOWED_MODEL_EXTENSIONS = ['pt']
@@ -463,5 +463,5 @@ def test_base64_transcoder(base64_image):
     emit(base64_response)
 
 if __name__ == '__main__':
-    socketio.run(app, host = hostname, port = port)
+    socketio.run(app, host = hostname, port = port, allow_unsafe_werkzeug=True)
 
