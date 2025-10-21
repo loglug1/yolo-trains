@@ -6,9 +6,9 @@ from flask_socketio import SocketIO, send, emit, join_room, leave_room
 from ai_modules.abc_model import ObjectDetectionModel
 from ai_modules.yolo11s import Yolo11s
 from utilities.base64_transcoder import Base64_Transcoder
-from utilities.helper_functions import db_connect, get_sha256, get_num_frames, get_basename, get_frame_from_file, validate_extension, create_folder_when_missing, get_annotated_frame, get_hex_from_word
+from utilities.helper_functions import db_connect, get_sha256, get_num_frames, get_basename, get_frame_from_file, validate_extension, create_folder_when_missing, get_annotated_frame, get_hex_from_word, get_framerate_from_file
 from db_connect.database import Videos, Frame, Object, Model, ProcessedFrame, get_object_type_list_by_model_by_video, get_unprocessed_frame_list, get_processed_frame_list_with_objects, get_video_list as db_get_video_list, get_model_list as db_get_model_list, insert_frame, insert_video, create_tables, insert_model, get_video, get_frame_list, get_frame_list_with_objects, get_model, insert_object, insert_object_type, get_processed_frame as db_get_processed_frame, insert_processed_frame, get_frame, get_processed_frame_with_objects, insert_frames, get_processed_frame_history_with_objects
-#from db_connect.influx import influx_connect, insert_objects_influx
+from db_connect.influx import influx_connect, insert_objects_influx
 from utilities.secrets_handler import read_secret
 import argparse
 import uuid
@@ -21,9 +21,10 @@ app = Flask(__name__)
 app.config['MAX_CONTENT_LENGTH'] = 2 * 1000 * 1000 * 1000 # 2GB max model file size
 
 # Environment Variables are prefered way to configure program
-hostname = os.environ.get('ROD_HOSTNAME', 'localhost')
+hostname = os.environ.get('ROD_HOSTNAME', '0.0.0.0')
 port = os.environ.get('ROD_PORT', '5000')
 upload_path = os.environ.get('ROD_DATA_PATH', 'uploads')
+allowed_origins = os.environ.get('ROD_ALLOWED_ORIGINS', '*').split(",")
 
 # Arg parser for legacy support
 parser = argparse.ArgumentParser(description='Run Railway Object Detection ')
@@ -68,7 +69,7 @@ conn.close()
 
 tasks = list() # Used to keep track of tasks in progress
 
-socketio = SocketIO(app, cors_allowed_origins=["https://piehost.com",f"http://{hostname}:{port}"], max_http_buffer_size=10*1000000, async_mode='threading')
+socketio = SocketIO(app, cors_allowed_origins=allowed_origins, max_http_buffer_size=10*1000000, async_mode='threading')
 
 # ======================================== API ENDPOINTS =======================================
 
@@ -401,8 +402,12 @@ def process_frame_helper(model: Model, video: Videos, frame: Frame, object_detec
         if res.status != 'success':
             print("Error inserting Object: ", res.message)
             continue
-    #client, writer = influx_connect("token", "org", "url") # requires you to make a bucket and all of this information, may be able to do this with docker container
-    #insert_objects_influx(client, writer, "bucket", model, video, frame, objects)
+    if influxdb_url is not '':
+        client, writer = influx_connect(influxdb_token, influxdb_org, influxdb_url) # These are from environment variables parsed at the top of this file
+        video.framerate = get_framerate_from_file(video.video_url)
+        res = insert_objects_influx(client, writer, influxdb_bucket, model, video, frame, converted_objects)
+        if res.status != 'success':
+            print("Influx error: ", res.message)
     # Mark Frame as Processed
     res = insert_processed_frame(conn, cursor, frame.frame_uuid, model.model_uuid)
     if res.status != 'success':

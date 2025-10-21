@@ -7,5 +7,5 @@ RUN apt-get update && \
     && rm -rf /var/lib/apt/lists/*
 RUN pip install --no-cache-dir -r amd_requirements.txt
 COPY . .
-CMD ["python", "app.py"]
+CMD ["python", "-u", "app.py"]
 #TODO: write custom startup script

@@ -9,6 +9,14 @@ jobs:
   build:
     runs-on: ubuntu-latest # Specify the runner environment
 
+    strategy:
+      matrix:
+        include:
+          - tag_prefix: amd
+            dockerfile_path: ./Dockerfile_amd
+          - tag_prefix: nvidia
+            dockerfile_path: .Dockerfile_nvidia
+
     steps:
     - name: Checkout repository
       uses: actions/checkout@v4 # Action to checkout your code
@@ -23,8 +31,8 @@ jobs:
       uses: docker/build-push-action@v5
       with:
         context: . # Path to the Dockerfile context (usually the root of your repo)
-        file: ./Dockerfile_amd # Path to your Dockerfile
+        file: ${{ matrix.dockerfile_path }} # Path to your Dockerfile
         push: true # Set to true to push the image to the registry
         tags: |
-          ${{ secrets.DOCKER_USERNAME }}/rod:amd-latest
-          ${{ secrets.DOCKER_USERNAME }}/your-image-name:amd-${{ github.sha }} # Tag with commit SHA
+          ${{ secrets.DOCKER_USERNAME }}/rod:${{ matrix.tag_prefix }}-latest
+          ${{ secrets.DOCKER_USERNAME }}/your-image-name:${{ matrix.tag_prefix }}-${{ github.sha }} # Tag with commit SHA

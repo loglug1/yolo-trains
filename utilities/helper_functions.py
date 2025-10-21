@@ -33,6 +33,13 @@ def get_num_frames(video_path):
     num_frames = cap.get(cv2.CAP_PROP_FRAME_COUNT)
     return num_frames
 
+def get_framerate_from_file(video_path):
+    cap = cv2.VideoCapture(video_path)
+    if not cap.isOpened():
+        raise FileNotFoundError(video_path)
+    framerate = cap.get(cv2.CAP_PROP_FPS)
+    return framerate
+
 # Functions used in validating uploaded files
 def validate_extension(filename, extension_list):
     return '.' in filename and filename.split('.')[1].lower() in extension_list

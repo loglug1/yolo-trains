@@ -189,6 +189,7 @@ class Videos:
     self.video_uuid = video_uuid
     self.title = title
     self.video_url = video_url
+    self.framerate = 30
 
   def __str__(self):
     return f"[{self.video_uuid}] {self.title} {self.video_url}"
