@@ -38,7 +38,11 @@
           </div>
           <div class="model-inputs">
             <h3>Model Inputs</h3>
-            <div class="model-input">Model File Input</div>
+            <div class="file-input">
+              <label for="modelInput" id="modelLabel">Model File Input</label>
+              <input type="file" id="modelInput" accept=".pt" />
+              <button id="uploadBtn">Upload</button>
+            </div>
             <select id="modelDropdown">
               <label for="modelDropdown">Select model:</label>
             </select>

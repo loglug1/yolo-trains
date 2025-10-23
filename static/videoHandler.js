@@ -1,5 +1,5 @@
 import { Video, Model, Frame, DetectionObject } from './Classes.js';
-import { postVideo, fetchVideos, fetchModels, fetchProcessing } from './api.js';
+import { postVideo, postModel, fetchVideos, fetchModels, fetchProcessing } from './api.js';
 
 
 
@@ -49,6 +49,20 @@ async function uploadVideo(){
   console.log("Server response:", result);
   alert(`Server response: ${result}`);
   populateVideoDropdown();
+}
+
+async function uploadModel(){
+  const fileInput = document.getElementById("modelInput");
+  if (fileInput.files.length === 0){
+    alert("Please select a model file first.");
+    return;
+  }
+
+  const file = fileInput.files[0];
+  const result = await postModel(file);
+  console.log("Server response:", result);
+  alert(`Server response: ${result}`);
+  populateModelDropdown();
 }
 
 document.getElementById("uploadBtn").addEventListener("click",uploadVideo);
