@@ -100,7 +100,11 @@ def upload_model():
             file_extension = secure_filename(file.filename).split('.')[1].lower()
             model_path = os.path.join(MODEL_LOCATION, secure_filename(name + '.' + file_extension))
             file.save(model_path)
-            # VALIDATE MODEL FILE TODO <<<<<<<<<<
+            try:
+                Yolo11s(model_path)
+            except:
+                os.remove(model_path)
+                return "Error loading model file!", 400
             # Save Model Database Entry
             conn, cursor = db_connect(DATABASE)
             insert_model(conn, cursor,model_id, name, model_path)
@@ -128,14 +132,18 @@ def upload_video():
             name = get_basename(file.filename)
             file_extension = secure_filename(file.filename).split('.')[1].lower()
             video_path = os.path.join(VIDEO_LOCATION, secure_filename(video_id + '.' + file_extension))
+            # Save Video to Video Upload Location
+            if os.path.exists(video_path):
+                return "Filename already exists in upload location!", 409
+            file.save(video_path)
+            # Get Video Framerate
+            framerate = get_framerate_from_file(video_path)
             # Save Video Database Entry (Happens before saving video to ensure that the video doesn't already exist)
             conn, cursor = db_connect(DATABASE)
-            res = insert_video(conn, cursor, video_id, name, video_path)
+            res = insert_video(conn, cursor, video_id, name, video_path, framerate)
             if res.status != 'success':
                 conn.close()
                 return res.message, 409
-            # Save Video to Video Upload Location
-            file.save(video_path)
             # Get frame count and validate video
             cap = cv2.VideoCapture(video_path)
             if not cap.isOpened():
@@ -404,7 +412,6 @@ def process_frame_helper(model: Model, video: Videos, frame: Frame, object_detec
             continue
     if influxdb_url is not '':
         client, writer = influx_connect(influxdb_token, influxdb_org, influxdb_url) # These are from environment variables parsed at the top of this file
-        video.framerate = get_framerate_from_file(video.video_url)
         res = insert_objects_influx(client, writer, influxdb_bucket, model, video, frame, converted_objects)
         if res.status != 'success':
             print("Influx error: ", res.message)
