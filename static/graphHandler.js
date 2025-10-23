@@ -146,7 +146,9 @@ function setupLiveSocket(connectionId) {
 }
 
 function updateGraph(frameList, objectType) {
-  const threshold = parseFloat(document.getElementById('thresholdinput').value) || 0;
+  const minthreshold = parseFloat(document.getElementById('minthresholdinput').value) || 0;
+  const maxthreshold = parseFloat(document.getElementById('maxthresholdinput').value) || 0;
+
   const frameInterval = parseInt(document.getElementById('frameIntervalInput').value) || 1;
   const filteredData = [];
 
@@ -155,20 +157,26 @@ function updateGraph(frameList, objectType) {
     if (frame.frame_num % frameInterval !== 0) return;
 
     frame.objects.forEach(obj => {
-      if (obj.object_type === objectType && obj.confidence >= threshold) {
+      if (obj.object_type === objectType && (obj.confidence >= minthreshold) && obj.confidence <= maxthreshold) {
         filteredData.push({ x: frame.frame_num, y: obj.confidence });
       }
     });
   });
 
   tempScatterChart.data.datasets[0].data = filteredData;
-  tempScatterChart.data.datasets[0].label = `${objectType} Confidence per Frame (≥ ${threshold})`;
+  tempScatterChart.data.datasets[0].label = `${objectType} Confidence per Frame`;
   tempScatterChart.update();
 }
 
 // Attach listener for live threshold updates
-const thresholdInput = document.getElementById('thresholdinput');
-thresholdInput.addEventListener('input', () => {
+const minthresholdInput = document.getElementById('minthresholdinput');
+minthresholdInput.addEventListener('input', () => {
+  // Make sure frameList and objectType are accessible here (you may have them as globals or from current context)
+  updateGraph(frames, currentObjectType);
+});
+
+const maxthresholdInput = document.getElementById('maxthresholdinput');
+maxthresholdInput.addEventListener('input', () => {
   // Make sure frameList and objectType are accessible here (you may have them as globals or from current context)
   updateGraph(frames, currentObjectType);
 });
