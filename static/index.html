@@ -38,7 +38,11 @@
           </div>
           <div class="model-inputs">
             <h3>Model Inputs</h3>
-            <div class="model-input">Model File Input</div>
+            <div class="file-input">
+              <label for="modelInput" id="modelLabel">Model File Input</label>
+              <input type="file" id="modelInput" accept=".pt" />
+              <button id="uploadBtn">Upload</button>
+            </div>
             <select id="modelDropdown">
               <label for="modelDropdown">Select model:</label>
             </select>
@@ -46,12 +50,34 @@
         </div>
         <div class="graph-controls-wrapper">
           <button id="addDataBtn">Generate Graph</button>
-          <label>
+          
+          <div>
+            <label>Show Live Images</label>
             <input type="checkbox" id="liveImageCheckbox">
-            Show Live Images
-          </label>
+          </div>
+
           <button id="resetZoom">Reset Zoom</button>
-          <select id="objectTypeDropdown"></select>
+
+          <div>
+            <label for="minthresholdinput">Min</label>
+            <input type="number" min="0" max="1" step="0.1" value="0.2" id="minthresholdinput">
+          </div>
+
+          <div>
+            <label for="maxminthresholdinput">Max</label>
+            <input type="number" min="0" max="1" step="0.1" value="1" id="maxthresholdinput">
+          </div>
+
+          <div>
+            <label for="frameIntervalInput">Frame Interval</label>
+           <input type="number" id="frameIntervalInput" value="1" min="1" step="1">
+          </div>
+
+          <div>
+            <label for="objectTypeDropdown">Object</label>
+            <select id="objectTypeDropdown"></select>
+          </div>
+
         </div>
 
         <div class="graph-wrapper">
@@ -64,15 +90,14 @@
         <div class="video-wrapper">
             <img id="frame" />
         </div>
+        <h3>Data Pane</h3>
         <div id="video-data-pane-wrapper" class="video-data-pane-wrapper">
-          <h3>Data Pane</h3>
           <p id="frame-num">Frame Num: </p>
           <!-- Populate per object detected -->
           <h5>Objects</h5>
           <div id="object-list"></div>
         </div>
       </div>
-    
     </div>
   </body>
 </html>

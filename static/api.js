@@ -27,6 +27,28 @@ export async function postVideo(video){
 }
 
 //HTTP POST request uploading models .pt files
+export async function postModel(modelFile){
+    try {
+        const formData = new FormData();
+        formData.append("model_file",modelFile);
+
+        const response = await fetch("/models", {
+            method: "POST",
+            body: formData
+        });
+
+        if (!response.ok) {
+            throw new Error(`Upload failed: ${response.status}`);
+        }
+
+        const result = await response.json();
+        console.log("Model upload success:",result);
+        return result;
+    } catch (error) {
+        console.error("Error uploading model:", error);
+    }
+}
+
 
 //=====GET======================================================================
 
