@@ -105,7 +105,7 @@ def create_tables(conn, cursor) -> Response :
 # INSERT FUNCTIONS
 def insert_video(conn, cursor, video_uuid: str, title: str, video_url: str, frame_rate: float) -> Response :
   try :
-    cursor.execute("""INSERT INTO videos (video_uuid, title, video_url) VALUES (?, ?, ?, ?)""", (video_uuid, title, video_url, frame_rate))
+    cursor.execute("""INSERT INTO videos (video_uuid, title, video_url, frame_rate) VALUES (?, ?, ?, ?)""", (video_uuid, title, video_url, frame_rate))
     conn.commit()
     return Response("success", f"Video {video_uuid} inserted successfully.")
 

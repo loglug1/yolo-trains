@@ -24,7 +24,7 @@ app.config['MAX_CONTENT_LENGTH'] = 2 * 1000 * 1000 * 1000 # 2GB max model file s
 hostname = os.environ.get('ROD_HOSTNAME', '0.0.0.0')
 port = os.environ.get('ROD_PORT', '5000')
 upload_path = os.environ.get('ROD_DATA_PATH', 'uploads')
-allowed_origins = os.environ.get('ROD_ALLOWED_ORIGINS', '*').split(",")
+allowed_origins = os.environ.get('ROD_ALLOWED_ORIGINS', '*,http://localhost:5000').split(",")
 
 # Arg parser for legacy support
 parser = argparse.ArgumentParser(description='Run Railway Object Detection ')
@@ -410,7 +410,7 @@ def process_frame_helper(model: Model, video: Videos, frame: Frame, object_detec
         if res.status != 'success':
             print("Error inserting Object: ", res.message)
             continue
-    if influxdb_url is not '':
+    if influxdb_url != '':
         client, writer = influx_connect(influxdb_token, influxdb_org, influxdb_url) # These are from environment variables parsed at the top of this file
         res = insert_objects_influx(client, writer, influxdb_bucket, model, video, frame, converted_objects)
         if res.status != 'success':
