@@ -18,7 +18,7 @@ class Yolo11s(ObjectDetectionModel) :
   def __init__(self, model_path = "ai_modules/ob_detect_models/yolo11s.pt") :
     self.model = YOLO(model_path)
     self.results = None
-    self.gpu_device = os.environ.get('HIP_VISIBLE_DEVICES', 'cpu')
+    self.gpu_device = os.environ.get('ROD_GPU_DEVICE', 'cpu')
     print("Using GPU: ", self.gpu_device)
 
   def set_model_path(self, url) :
