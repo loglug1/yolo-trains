@@ -33,6 +33,13 @@ def get_num_frames(video_path):
     num_frames = cap.get(cv2.CAP_PROP_FRAME_COUNT)
     return num_frames
 
+def get_framerate_from_file(video_path):
+    cap = cv2.VideoCapture(video_path)
+    if not cap.isOpened():
+        raise FileNotFoundError(video_path)
+    framerate = cap.get(cv2.CAP_PROP_FPS)
+    return framerate
+
 # Functions used in validating uploaded files
 def validate_extension(filename, extension_list):
     return '.' in filename and filename.split('.')[1].lower() in extension_list
@@ -59,12 +66,14 @@ def get_hex_from_word(word):
     return f"#{digested_hash[0:6]}"
 
 # Function to draw objects onto frame
-def get_annotated_frame(processed_frame: ProcessedFrame, frame_img: numpy.ndarray) :
+def get_annotated_frame(processed_frame: ProcessedFrame, frame_img: numpy.ndarray, min_conf: float = 0, max_conf: float = 1) :
     if processed_frame.objects is None :
         return frame_img
     
     updated_frame = frame_img
     for obj in processed_frame.objects :
+        if obj.confidence < min_conf or obj.confidence > max_conf:
+            continue
         tl_pt = (round(obj.x1), round(obj.y1))
         br_pt = (round(obj.x2), round(obj.y2))
         #bc = colors(obj.class_id if obj.class_id is not None else 0, bgr=True)

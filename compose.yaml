@@ -1,0 +1,55 @@
+# compose.yaml
+services:
+  influxdb2:
+    image: influxdb:2
+    ports:
+      - 8086:8086
+    environment:
+      DOCKER_INFLUXDB_INIT_MODE: setup
+      DOCKER_INFLUXDB_INIT_USERNAME: rodadmin
+      DOCKER_INFLUXDB_INIT_PASSWORD: rodpassword
+      DOCKER_INFLUXDB_INIT_ADMIN_TOKEN: "CH@NGEM3!!!"
+      DOCKER_INFLUXDB_INIT_ORG: rod
+      DOCKER_INFLUXDB_INIT_BUCKET: rod_data
+    volumes:
+      - type: volume
+        source: influxdb2-data
+        target: /var/lib/influxdb2
+      - type: volume
+        source: influxdb2-config
+        target: /etc/influxdb2
+  rod:
+    # Images are either loglug/rod:amd-latest or loglug/rod:nvidia-latest
+    image: loglug/rod:amd-latest
+    ports:
+      - 5000:5000 # Change the host side of this if you want to use a different port
+    environment:
+      # This should probably never change, just here for documentation purposes
+      ROD_HOSTNAME: 0.0.0.0 
+      # This probably also should never change
+      ROD_PORT: 5000 
+      # This needs to match the volume mount location
+      ROD_DATA_PATH: /uploads
+      # This needs to match the hostname and port of the Docker host
+      ROD_ALLOWED_ORIGINS: http://localhost:5000
+      INFLUXDB_TOKEN: "CH@NGEM3!!!"
+      # INFLUXDB_TOKEN_SECRET: /run/secrets/influxdb-token # This will take precedence over INFLUXDB_TOKEN
+      INFLUXDB_ORG: rod
+      INFLUXDB_URL: http://influxdb2:8086/
+      INFLUXDB_BUCKET: rod_data
+    # secrets:
+    #  - influxdb-token
+    volumes:
+      - type: volume
+        source: rod-data
+        # This needs to match ROD_DATA_PATH
+        target: /uploads
+
+# secrets:
+#   influxdb-token:
+#     file: ./.env.influxdb-token
+
+volumes:
+  influxdb2-data:
+  influxdb2-config:
+  rod-data:
