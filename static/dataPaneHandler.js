@@ -17,8 +17,10 @@ export async function updateDataPane(modelId,videoId,frame,min,max){
 
     // Loop through objects and add <p>
     frame.objects.forEach(obj => {
-    const p = document.createElement("p");
-    p.textContent = `${obj.object_type}, Confidence: ${obj.confidence}`;
-    objectListDiv.appendChild(p);
+        if(obj.confidence >= min && obj.confidence <= max){
+                const p = document.createElement("p");
+        p.textContent = `${obj.object_type}, Confidence: ${obj.confidence}`;
+        objectListDiv.appendChild(p);
+    }
     });
 }
