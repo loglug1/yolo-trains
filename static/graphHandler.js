@@ -7,6 +7,8 @@ var liveObjectTypes = new Set(); // To track unique object types in live mode
 var currentObjectType = null;    // Currently selected object type
 var socket = null;               // Socket connection
 var tempScatterChart = null;
+var minthreshold
+var maxthreshold
 
 export let frameClicked;
 
@@ -146,8 +148,8 @@ function setupLiveSocket(connectionId) {
 }
 
 function updateGraph(frameList, objectType) {
-  const minthreshold = parseFloat(document.getElementById('minthresholdinput').value) || 0;
-  const maxthreshold = parseFloat(document.getElementById('maxthresholdinput').value) || 0;
+  minthreshold = parseFloat(document.getElementById('minthresholdinput').value) || 0;
+  maxthreshold = parseFloat(document.getElementById('maxthresholdinput').value) || 0;
 
   const frameInterval = parseInt(document.getElementById('frameIntervalInput').value) || 1;
   const filteredData = [];
@@ -249,7 +251,7 @@ frameIntervalInput.addEventListener('input', () => {
     const frame = frames.find(f => f.frame_num === frameNum);
     console.log("Frame clicked:", frame);
     frameClicked = frame;
-    updateDataPane(modelId,videoId,frame)
+    updateDataPane(modelId,videoId,frame,`${parseFloat(minthreshold).toFixed(1)}`,`${parseFloat(maxthreshold).toFixed(1)}`)
   }
 
 document.addEventListener("DOMContentLoaded", () => {
