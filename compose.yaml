@@ -24,14 +24,16 @@ services:
     ports:
       - 5000:5000 # Change the host side of this if you want to use a different port
     environment:
-      # This should probably never change, just here for documentation purposes
+      # This should probably never change as it is internal to the Docker container, just here for documentation purposes
       ROD_HOSTNAME: 0.0.0.0 
-      # This probably also should never change
+      # This probably also should never change as it is also internal to the Docker container
       ROD_PORT: 5000 
       # This needs to match the volume mount location
       ROD_DATA_PATH: /uploads
       # This needs to match the hostname and port of the Docker host
       ROD_ALLOWED_ORIGINS: http://localhost:5000
+      # This passes the cuda/rocm device to the Object Detection Model
+      ROD_GPU_DEVICE: cpu
       INFLUXDB_TOKEN: "CH@NGEM3!!!"
       # INFLUXDB_TOKEN_SECRET: /run/secrets/influxdb-token # This will take precedence over INFLUXDB_TOKEN
       INFLUXDB_ORG: rod

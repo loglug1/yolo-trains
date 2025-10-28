@@ -15,7 +15,8 @@ def create_tables(conn, cursor) -> Response :
       CREATE TABLE IF NOT EXISTS videos (
         video_uuid VARCHAR(16) UNIQUE PRIMARY KEY,
         title VARCHAR(255) NOT NULL,
-        video_url VARCHAR(255) NOT NULL
+        video_url VARCHAR(255) NOT NULL,
+        frame_rate FLOAT NOT NULL
       );
     """, 
 
@@ -102,9 +103,9 @@ def create_tables(conn, cursor) -> Response :
   
 
 # INSERT FUNCTIONS
-def insert_video(conn, cursor, video_uuid: str, title: str, video_url: str) -> Response :
+def insert_video(conn, cursor, video_uuid: str, title: str, video_url: str, frame_rate: float) -> Response :
   try :
-    cursor.execute("""INSERT INTO videos (video_uuid, title, video_url) VALUES (?, ?, ?)""", (video_uuid, title, video_url))
+    cursor.execute("""INSERT INTO videos (video_uuid, title, video_url, frame_rate) VALUES (?, ?, ?, ?)""", (video_uuid, title, video_url, frame_rate))
     conn.commit()
     return Response("success", f"Video {video_uuid} inserted successfully.")
 
@@ -185,14 +186,14 @@ def insert_object_type(conn, cursor, model_uuid: str, class_id: int, name: str) 
 # QUERY VIDEO FUNCTIONS
 # classes
 class Videos:
-  def __init__(self, video_uuid: str, title: str, video_url: str):
+  def __init__(self, video_uuid: str, title: str, video_url: str, frame_rate: float):
     self.video_uuid = video_uuid
     self.title = title
     self.video_url = video_url
-    self.framerate = 30
+    self.framerate = frame_rate
 
   def __str__(self):
-    return f"[{self.video_uuid}] {self.title} {self.video_url}"
+    return f"[{self.video_uuid}] {self.title} {self.video_url} {self.framerate}fps"
   
 class VideoResponse:
   def __init__(self, response: Response, video: Videos | None):
@@ -213,9 +214,9 @@ class VideoListResponse:
 # definitions
 def get_video_list(conn, cursor) -> VideoListResponse :
   try :
-    cursor.execute("SELECT video_uuid, title, video_url FROM videos")
+    cursor.execute("SELECT video_uuid, title, video_url, frame_rate FROM videos")
     rows = cursor.fetchall()
-    videos = [Videos(video_uuid=row[0], title=row[1], video_url=row[2]) for row in rows]
+    videos = [Videos(video_uuid=row[0], title=row[1], video_url=row[2], frame_rate=row[3]) for row in rows]
     return VideoListResponse(Response("success", "Videos fetched successfully."), videos)
   
   except Exception as e :
@@ -223,10 +224,10 @@ def get_video_list(conn, cursor) -> VideoListResponse :
   
 def get_video(conn, cursor, video_uuid: str) -> VideoResponse :
   try :
-    cursor.execute("SELECT video_uuid, title, video_url FROM videos WHERE video_uuid = ?", (video_uuid,))
+    cursor.execute("SELECT video_uuid, title, video_url, frame_rate FROM videos WHERE video_uuid = ?", (video_uuid,))
     row = cursor.fetchone()
     if row :
-      video = Videos(video_uuid=row[0], title=row[1], video_url=row[2])
+      video = Videos(video_uuid=row[0], title=row[1], video_url=row[2], frame_rate=row[3])
       return VideoResponse(Response("success", f"Video {video_uuid} fetched successfully."), video)
     else :
       return VideoResponse(Response("success", f"Video {video_uuid} not found."), None)

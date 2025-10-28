@@ -15,7 +15,7 @@ jobs:
           - tag_prefix: amd
             dockerfile_path: ./Dockerfile_amd
           - tag_prefix: nvidia
-            dockerfile_path: .Dockerfile_nvidia
+            dockerfile_path: ./Dockerfile_nvidia
 
     steps:
     - name: Checkout repository
@@ -36,5 +36,5 @@ jobs:
         tags: |
           ${{ secrets.DOCKER_USERNAME }}/rod:${{ matrix.tag_prefix }}-latest
           ${{ secrets.DOCKER_USERNAME }}/rod:${{ matrix.tag_prefix }}-${{ github.sha }}
-        cache-from: type=registry,ref=${{ secrets.DOCKER_USERNAME }}/rod:amd-latest
+        cache-from: type=registry,ref=${{ secrets.DOCKER_USERNAME }}/rod:${{ matrix.tag_prefix }}-latest
         cache-to: type=inline

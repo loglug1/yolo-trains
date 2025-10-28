@@ -24,7 +24,11 @@ app.config['MAX_CONTENT_LENGTH'] = 2 * 1000 * 1000 * 1000 # 2GB max model file s
 hostname = os.environ.get('ROD_HOSTNAME', '0.0.0.0')
 port = os.environ.get('ROD_PORT', '5000')
 upload_path = os.environ.get('ROD_DATA_PATH', 'uploads')
-allowed_origins = os.environ.get('ROD_ALLOWED_ORIGINS', '*').split(",")
+allowed_origins = os.environ.get('ROD_ALLOWED_ORIGINS', None)
+if allowed_origins is not None:
+    allowed_origins = allowed_origins.split(",")
+else:
+    allowed_origins = '*'
 
 # Arg parser for legacy support
 parser = argparse.ArgumentParser(description='Run Railway Object Detection ')
@@ -100,7 +104,11 @@ def upload_model():
             file_extension = secure_filename(file.filename).split('.')[1].lower()
             model_path = os.path.join(MODEL_LOCATION, secure_filename(name + '.' + file_extension))
             file.save(model_path)
-            # VALIDATE MODEL FILE TODO <<<<<<<<<<
+            try:
+                Yolo11s(model_path)
+            except:
+                os.remove(model_path)
+                return "Error loading model file!", 400
             # Save Model Database Entry
             conn, cursor = db_connect(DATABASE)
             insert_model(conn, cursor,model_id, name, model_path)
@@ -128,14 +136,18 @@ def upload_video():
             name = get_basename(file.filename)
             file_extension = secure_filename(file.filename).split('.')[1].lower()
             video_path = os.path.join(VIDEO_LOCATION, secure_filename(video_id + '.' + file_extension))
+            # Save Video to Video Upload Location
+            if os.path.exists(video_path):
+                return "Filename already exists in upload location!", 409
+            file.save(video_path)
+            # Get Video Framerate
+            framerate = get_framerate_from_file(video_path)
             # Save Video Database Entry (Happens before saving video to ensure that the video doesn't already exist)
             conn, cursor = db_connect(DATABASE)
-            res = insert_video(conn, cursor, video_id, name, video_path)
+            res = insert_video(conn, cursor, video_id, name, video_path, framerate)
             if res.status != 'success':
                 conn.close()
                 return res.message, 409
-            # Save Video to Video Upload Location
-            file.save(video_path)
             # Get frame count and validate video
             cap = cv2.VideoCapture(video_path)
             if not cap.isOpened():
@@ -262,36 +274,51 @@ def get_all_processed_frames(model_id, video_id):
         return {'connection_id': task_id, 'num_frames': num_frames, 'frames': processed_frames}, 200
     return {'num_frames': num_frames, 'frames': processed_frames}, 200
 
-# Get Specific Unprocessed Frame
-@app.route('/videos/<video_id>/<int:frame_num>', methods=['GET']) 
-def get_raw_frame(video_id, frame_num):
+# Get Specific Unprocessed Frame img element
+@app.route('/videos/<video_id>/<int:frame_num>', defaults={'response_format': ''})
+@app.route('/videos/<video_id>/<int:frame_num>/<string:response_format>', methods=['GET'])
+def get_raw_frame(video_id, frame_num, response_format):
     conn, cursor = db_connect(DATABASE)
     res = get_video(conn, cursor, video_id)
     conn.close()
     if res.response.status != 'success':
         return res.response.message, 500
+    if res.response.status == 'success' and 'not found.' in res.response.message:
+        conn.close()
+        return res.response.message, 404
     video_path = res.video.video_url
     try:
         image = get_frame_from_file(video_path, frame_num)
-        return f"<img src='{Base64_Transcoder.nparray_to_data_url(image)}' alt='fake alt' />", 200
+        data_url = Base64_Transcoder.nparray_to_data_url(image)
     except FileNotFoundError as e:
         return "File not found: " + e, 500
+    if response_format == 'img':
+        return f"<img src='{data_url}' alt='Unprocessed Frame' />", 200
+    return {'video_id': video_id, 'frame_num': frame_num, 'image': data_url}, 200
 
 # Get specific processed frame
-@app.route('/models/<model_id>/<video_id>/<int:frame_num>', methods=['GET'])
-def get_processed_frame(model_id, video_id, frame_num):
+@app.route('/models/<model_id>/<video_id>/<int:frame_num>', defaults={'min_conf': 0, 'max_conf': 1, 'response_format': ''})
+@app.route('/models/<model_id>/<video_id>/<int:frame_num>/<float:min_conf>/<float:max_conf>', defaults={'response_format': ''})
+@app.route('/models/<model_id>/<video_id>/<int:frame_num>/<float:min_conf>/<float:max_conf>/<string:response_format>', methods=['GET'])
+def get_processed_frame(model_id, video_id, frame_num, min_conf, max_conf, response_format):
     # Get Model Metadata
     conn, cursor = db_connect(DATABASE)
     res = get_model(conn, cursor, model_id)
     if res.response.status != 'success':
         conn.close()
         return res.response.message, 500
+    if res.response.status == 'success' and 'not found.' in res.response.message:
+        conn.close()
+        return res.response.message, 404
     model = res.model
     # Get Video Metadata
     res = get_video(conn, cursor, video_id)
     if res.response.status != 'success':
         conn.close()
         return res.response.message, 500
+    if res.response.status == 'success' and 'not found.' in res.response.message:
+        conn.close()
+        return res.response.message, 404
     video = res.video
     res = get_processed_frame_with_objects(conn, cursor, video_id, model_id, frame_num)
     if res.response.status == 'error':
@@ -304,42 +331,20 @@ def get_processed_frame(model_id, video_id, frame_num):
             conn.close()
             return res.response.message, 500
         conn.close()
-        return process_single_frame(model, video, res.frame), 200
-    # Generate boxes image and return from DB if found
-    conn.close()
-    frame_dict = res.processed_frame.to_dict()
-    frame_dict['image'] = Base64_Transcoder.nparray_to_data_url(get_annotated_frame(res.processed_frame, get_frame_from_file(video.video_url, frame_num)))
-    return frame_dict, 200
-
-# Get specific processed frame img tag
-@app.route('/test/models/<model_id>/<video_id>/<int:frame_num>', methods=['GET'])
-def get_processed_frame_img_tag(model_id, video_id, frame_num):
-    # Get Model Metadata
-    conn, cursor = db_connect(DATABASE)
-    res = get_model(conn, cursor, model_id)
-    if res.response.status != 'success':
-        conn.close()
-        return res.response.message, 500
-    model = res.model
-    # Get Video Metadata
-    res = get_video(conn, cursor, video_id)
-    if res.response.status != 'success':
-        conn.close()
-        return res.response.message, 500
-    video = res.video
-    res = get_processed_frame_with_objects(conn, cursor, video_id, model_id, frame_num)
-    if res.response.status == 'success' and "not found." not in res.response.message:
+        frame_dict = process_single_frame(model, video, res.frame, min_conf, max_conf)
+    else:
         # Generate boxes image and return from DB if found
         conn.close()
-        return f"<img src='{Base64_Transcoder.nparray_to_data_url(get_annotated_frame(res.processed_frame, get_frame_from_file(video.video_url, frame_num)))}' alt='fake alt' />", 200
-    # Get unprocessed frame and process if not found
-    res = get_frame(conn, cursor, video_id, frame_num)
-    if res.response.status != 'success':
-        conn.close()
-        return res.response.message, 500
-    print("Returning freshly processed frame")
-    processed_frame = process_single_frame(model, video, res.frame)
-    return f"<img src='{processed_frame['image']}' alt='fake alt' />", 200
+        frame_dict = res.processed_frame.to_dict()
+        try:
+            image = get_frame_from_file(video.video_url, frame_num)
+        except FileNotFoundError as e:
+            return "File not found: " + e, 500
+        frame_dict['image'] = Base64_Transcoder.nparray_to_data_url(get_annotated_frame(res.processed_frame, image, min_conf, max_conf))
+    # Return frame_dict in desired format
+    if response_format == 'img':
+        return f"<img src='{frame_dict['image']}' alt='Processed Frame' />", 200
+    return frame_dict, 200
 
 # Get Specific Processed Frame History
 @app.route('/models/<model_id>/<video_id>/<int:frame_num>/history', methods=['GET']) 
@@ -376,12 +381,12 @@ def _process_all_frames(model_id: str, video: Videos, frames: list[Frame], task_
         tasks.remove(task_id)
     conn.close()
 
-def process_single_frame(model: Model, video: Videos, frame: Frame):
+def process_single_frame(model: Model, video: Videos, frame: Frame, min_conf: float = 0, max_conf: float = 1):
     object_detection_model = Yolo11s(model.model_url)
-    processed_frame = process_frame_helper(model, video, frame, object_detection_model)
+    processed_frame = process_frame_helper(model, video, frame, object_detection_model, min_conf, max_conf)
     return processed_frame
 
-def process_frame_helper(model: Model, video: Videos, frame: Frame, object_detection_model: ObjectDetectionModel):
+def process_frame_helper(model: Model, video: Videos, frame: Frame, object_detection_model: ObjectDetectionModel, min_conf: float = 0, max_conf: float = 1):
     # Get Frame Image
     frame_image = get_frame_from_file(video.video_url, frame.frame_number)
     # Run predictions on frame
@@ -402,9 +407,8 @@ def process_frame_helper(model: Model, video: Videos, frame: Frame, object_detec
         if res.status != 'success':
             print("Error inserting Object: ", res.message)
             continue
-    if influxdb_url is not '':
+    if influxdb_url != '':
         client, writer = influx_connect(influxdb_token, influxdb_org, influxdb_url) # These are from environment variables parsed at the top of this file
-        video.framerate = get_framerate_from_file(video.video_url)
         res = insert_objects_influx(client, writer, influxdb_bucket, model, video, frame, converted_objects)
         if res.status != 'success':
             print("Influx error: ", res.message)
@@ -415,7 +419,7 @@ def process_frame_helper(model: Model, video: Videos, frame: Frame, object_detec
     conn.close()
     # Get Frame with boxes drawn
     pframe = ProcessedFrame(frame.frame_uuid, video.video_uuid, model.model_uuid, frame.frame_number, converted_objects)
-    annotated_image = get_annotated_frame(pframe, frame_image)
+    annotated_image = get_annotated_frame(pframe, frame_image, min_conf, max_conf)
     return {'frame_num': frame.frame_number, 'image': Base64_Transcoder.nparray_to_data_url(annotated_image), 'objects': [vars(converted_object) for converted_object in converted_objects]}
 
 # ====================================== SocketIO Event Handlers ==============================================
