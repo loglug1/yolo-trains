@@ -24,7 +24,11 @@ app.config['MAX_CONTENT_LENGTH'] = 2 * 1000 * 1000 * 1000 # 2GB max model file s
 hostname = os.environ.get('ROD_HOSTNAME', '0.0.0.0')
 port = os.environ.get('ROD_PORT', '5000')
 upload_path = os.environ.get('ROD_DATA_PATH', 'uploads')
-allowed_origins = os.environ.get('ROD_ALLOWED_ORIGINS', '*,http://localhost:5000').split(",")
+allowed_origins = os.environ.get('ROD_ALLOWED_ORIGINS', None)
+if allowed_origins is not None:
+    allowed_origins = allowed_origins.split(",")
+else:
+    allowed_origins = '*'
 
 # Arg parser for legacy support
 parser = argparse.ArgumentParser(description='Run Railway Object Detection ')
@@ -291,22 +295,6 @@ def get_raw_frame(video_id, frame_num, response_format):
     if response_format == 'img':
         return f"<img src='{data_url}' alt='Unprocessed Frame' />", 200
     return {'video_id': video_id, 'frame_num': frame_num, 'image': data_url}, 200
-    
-# Get Specific Unprocessed Frame img element
-# @app.route('/videos/<video_id>/<int:frame_num>/img', methods=['GET']) 
-# def get_raw_frame_img(video_id, frame_num):
-#     conn, cursor = db_connect(DATABASE)
-#     res = get_video(conn, cursor, video_id)
-#     conn.close()
-#     if res.response.status != 'success':
-#         return res.response.message, 500
-#     video_path = res.video.video_url
-#     try:
-#         image = get_frame_from_file(video_path, frame_num)
-#     except FileNotFoundError as e:
-#         return "File not found: " + e, 500
-#     if response_format
-#     return f"<img src='{Base64_Transcoder.nparray_to_data_url(image)}' alt='Unprocessed Frame' />", 200
 
 # Get specific processed frame
 @app.route('/models/<model_id>/<video_id>/<int:frame_num>', defaults={'min_conf': 0, 'max_conf': 1, 'response_format': ''})
@@ -350,10 +338,9 @@ def get_processed_frame(model_id, video_id, frame_num, min_conf, max_conf, respo
         frame_dict = res.processed_frame.to_dict()
         try:
             image = get_frame_from_file(video.video_url, frame_num)
-            data_url = Base64_Transcoder.nparray_to_data_url(image)
         except FileNotFoundError as e:
             return "File not found: " + e, 500
-        frame_dict['image'] = Base64_Transcoder.nparray_to_data_url(get_annotated_frame(res.processed_frame, data_url, min_conf, max_conf))
+        frame_dict['image'] = Base64_Transcoder.nparray_to_data_url(get_annotated_frame(res.processed_frame, image, min_conf, max_conf))
     # Return frame_dict in desired format
     if response_format == 'img':
         return f"<img src='{frame_dict['image']}' alt='Processed Frame' />", 200
