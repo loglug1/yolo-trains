@@ -1,3 +1,5 @@
+All queries should be made to http://<ROD_HOSTNAME>:<ROD_PORT>
+
 /videos GET
 [
     {
@@ -155,6 +157,7 @@
 }
 
 /models/<model_id>/<video_id>/<frame_number> GET
+/models/<model_id>/<video_id>/<frame_number>/<min_confidence>/<max_confidence> GET // Optional; filters the confidence levels (important for the image); note: min and max confidence must be floats e.g. 1.0 works and 1 does not
 {
     "frame_number": 0,
     "image": "data:image/webp;base64,cqkLYWGFnmwVpHbjOCXYX0gkrfc5btbZS32AAAA", // This will be HUGE
@@ -284,4 +287,3 @@ processed_frame SocketIO event
         },
     ]
 }
-
