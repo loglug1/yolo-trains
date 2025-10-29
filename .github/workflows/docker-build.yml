@@ -20,8 +20,8 @@ jobs:
     steps:
       - name: Install Dependencies
         run: |
-          apt-get update
-          apt-get install -y --no-install-recommends iptables
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends iptables
         
       - name: Set up Docker
         uses: docker/setup-docker-action@v4
