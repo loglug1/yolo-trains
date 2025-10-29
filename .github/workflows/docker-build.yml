@@ -7,7 +7,7 @@ on:
 
 jobs:
   build:
-    runs-on: ubuntu-latest # Specify the runner environment
+    runs-on: ubuntu-slim # Specify the runner environment
 
     strategy:
       matrix:
@@ -18,18 +18,6 @@ jobs:
             dockerfile_path: ./Dockerfile_nvidia
 
     steps:
-      - name: Maximize build space
-        uses: easimon/maximize-build-space@master
-        with:
-          root-reserve-mb: 512
-          swap-size-mb: 1024
-          remove-dotnet: 'true'
-    
-      - name: Check Free Space
-        run: |
-          echo "Free space:"
-          df -h
-    
       - name: Checkout repository
         uses: actions/checkout@v4 # Action to checkout your code
 
