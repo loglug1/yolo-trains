@@ -13,7 +13,7 @@ def insert_objects_influx(client, writer, bucket, model: Model, video: Videos, f
   try : 
 
     DATE_FORMAT = "%Y-%m-%d"
-    NAIVE_EPOCH = datetime.strptime(os.environ.get('INFLUXDB_EPOCH', "2025-01-01"))
+    NAIVE_EPOCH = datetime.strptime(os.environ.get('INFLUXDB_EPOCH', "2025-01-01"), DATE_FORMAT)
     UTC_EPOCH = NAIVE_EPOCH.replace(tzinfo=UTC)
     frametime = frame.frame_number / video.framerate
 
@@ -26,6 +26,7 @@ def insert_objects_influx(client, writer, bucket, model: Model, video: Videos, f
         .tag("video_id", video.video_uuid)
         .field("video", video.title) 
         .tag("object", obj.type) 
+        .tag("frame_number", frame.frame_number)
         .field("confidence", obj.confidence) 
         .field("x1", obj.x1) 
         .field("y1", obj.y1) 

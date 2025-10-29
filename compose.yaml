@@ -20,7 +20,7 @@ services:
         target: /etc/influxdb2
   rod:
     # Images are either loglug/rod:amd-latest or loglug/rod:nvidia-latest
-    image: loglug/rod:amd-latest
+    image: ${IMAGE:-loglug/rod:nvidia-latest}
     ports:
       - 5000:5000 # Change the host side of this if you want to use a different port
     environment:
@@ -30,15 +30,18 @@ services:
       ROD_PORT: 5000 
       # This needs to match the volume mount location
       ROD_DATA_PATH: /uploads
-      # This needs to match the hostname and port of the Docker host
+      # This needs to match the hostname and port of the Docker host (defaults to any)
       ROD_ALLOWED_ORIGINS: http://localhost:5000
-      # This passes the cuda/rocm device to the Object Detection Model
+      # This passes the cuda/cpu device to the Object Detection Model
       ROD_GPU_DEVICE: cpu
       INFLUXDB_TOKEN: "CH@NGEM3!!!"
       # INFLUXDB_TOKEN_SECRET: /run/secrets/influxdb-token # This will take precedence over INFLUXDB_TOKEN
       INFLUXDB_ORG: rod
       INFLUXDB_URL: http://influxdb2:8086/
       INFLUXDB_BUCKET: rod_data
+      # The midnight of the date input here will be used as the epoch when inserting data into InfluxDB
+      # Note: In InfluxDB, it will be stored as UTC. Format: Year-Month-Date
+      INFLUXDB_EPOCH: "2025-01-01"
     # secrets:
     #  - influxdb-token
     volumes:

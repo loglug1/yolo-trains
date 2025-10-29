@@ -1,7 +1,4 @@
 Flask==3.1.2
 Flask-SocketIO==5.5.1
 influxdb-client==1.49.0
---extra-index-url https://download.pytorch.org/whl/rocm6.1
-torch==2.6.0+rocm6.1
-torchvision==0.21.0+rocm6.1
 ultralytics==8.3.218
