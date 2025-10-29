@@ -18,6 +18,11 @@ jobs:
             dockerfile_path: ./Dockerfile_nvidia
 
     steps:
+      - name: Remove unnecessary files
+        run: |
+          sudo rm -rf /usr/share/dotnet
+          sudo rm -rf "$AGENT_TOOLSDIRECTORY"
+          
       - name: Checkout repository
         uses: actions/checkout@v4 # Action to checkout your code
 
