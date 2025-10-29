@@ -18,11 +18,8 @@ jobs:
             dockerfile_path: ./Dockerfile_nvidia
 
     steps:
-      - name: Install Dependencies
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y --no-install-recommends \
-            docker
+      - name: Set up Docker
+        uses: docker/setup-docker-action@v4
         
       - name: Checkout repository
         uses: actions/checkout@v4 # Action to checkout your code
