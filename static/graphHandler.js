@@ -7,10 +7,13 @@ var liveObjectTypes = new Set(); // To track unique object types in live mode
 var currentObjectType = null;    // Currently selected object type
 var socket = null;               // Socket connection
 var tempScatterChart = null;
-var minthreshold
-var maxthreshold
+var minthreshold;
+var maxthreshold;
+var videoId;
+var modelId;
+var focusFrame
 
-export let frameClicked;
+// export let frameClicked;
 
 async function getFrames(videoId, modelId) {
   if (!videoId || !modelId) throw new Error("Both videoId and modelId are required.");
@@ -173,14 +176,18 @@ function updateGraph(frameList, objectType) {
 // Attach listener for live threshold updates
 const minthresholdInput = document.getElementById('minthresholdinput');
 minthresholdInput.addEventListener('input', () => {
-  // Make sure frameList and objectType are accessible here (you may have them as globals or from current context)
   updateGraph(frames, currentObjectType);
+  if(videoId && modelId && focusFrame ){
+    updateDataPane(modelId,videoId,focusFrame,`${parseFloat(minthreshold).toFixed(1)}`,`${parseFloat(maxthreshold).toFixed(1)}`)
+  }
 });
 
 const maxthresholdInput = document.getElementById('maxthresholdinput');
 maxthresholdInput.addEventListener('input', () => {
-  // Make sure frameList and objectType are accessible here (you may have them as globals or from current context)
   updateGraph(frames, currentObjectType);
+    if(videoId && modelId && focusFrame ){
+    updateDataPane(modelId,videoId,focusFrame,`${parseFloat(minthreshold).toFixed(1)}`,`${parseFloat(maxthreshold).toFixed(1)}`)
+  }
 });
 
 const frameIntervalInput = document.getElementById('frameIntervalInput');
@@ -191,8 +198,8 @@ frameIntervalInput.addEventListener('input', () => {
 
   // Fetch and plot frames
   async function addDataPoints() {
-    const videoId = document.getElementById("videoDropdown").value;
-    const modelId = document.getElementById("modelDropdown").value;
+    videoId = document.getElementById("videoDropdown").value;
+    modelId = document.getElementById("modelDropdown").value;
 
     if (!videoId || !modelId) {
       alert("Please select both a video and a model.");
@@ -246,12 +253,11 @@ frameIntervalInput.addEventListener('input', () => {
 
   //=====Gets frame from point clicked========================
   function findFrameFromPoint(frameNum) {
-    const videoId = document.getElementById("videoDropdown").value;
-    const modelId = document.getElementById("modelDropdown").value;
-    const frame = frames.find(f => f.frame_num === frameNum);
-    console.log("Frame clicked:", frame);
-    frameClicked = frame;
-    updateDataPane(modelId,videoId,frame,`${parseFloat(minthreshold).toFixed(1)}`,`${parseFloat(maxthreshold).toFixed(1)}`)
+    videoId = document.getElementById("videoDropdown").value;
+    modelId = document.getElementById("modelDropdown").value;
+    focusFrame = frames.find(f => f.frame_num === frameNum);
+    console.log("Frame clicked:", focusFrame);
+    updateDataPane(modelId,videoId,focusFrame,`${parseFloat(minthreshold).toFixed(1)}`,`${parseFloat(maxthreshold).toFixed(1)}`)
   }
 
 document.addEventListener("DOMContentLoaded", () => {
