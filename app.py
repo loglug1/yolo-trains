@@ -391,10 +391,6 @@ def process_frame_helper(model: Model, video: Videos, frame: Frame, object_detec
     frame_image = get_frame_from_file(video.video_url, frame.frame_number)
     # Run predictions on frame
     object_detection_model.predict_objects_in(frame_image)
-    # Get frame with boxes drawn
-    nparr_processed_frame = object_detection_model.get_image()
-    # Convert processed frame image into base64 data url
-    processed_data_url = Base64_Transcoder.nparray_to_data_url(nparr_processed_frame)
     # Write detected objects to database
     objects = json.loads(object_detection_model.get_boxes_json())
     converted_objects = list[Object]()
