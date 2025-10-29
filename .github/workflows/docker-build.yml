@@ -7,7 +7,7 @@ on:
 
 jobs:
   build:
-    runs-on: ubuntu-slim # Specify the runner environment
+    runs-on: ubuntu-latest # Specify the runner environment
 
     strategy:
       matrix:
@@ -17,10 +17,7 @@ jobs:
           - tag_prefix: nvidia
             dockerfile_path: ./Dockerfile_nvidia
 
-    steps:
-      - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v3
-        
+    steps:        
       - name: Checkout repository
         uses: actions/checkout@v4 # Action to checkout your code
 
