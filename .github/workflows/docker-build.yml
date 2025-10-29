@@ -7,7 +7,7 @@ on:
 
 jobs:
   build:
-    runs-on: ubuntu-latest # Specify the runner environment
+    runs-on: ubuntu-slim # Specify the runner environment
 
     strategy:
       matrix:
@@ -18,11 +18,16 @@ jobs:
             dockerfile_path: ./Dockerfile_nvidia
 
     steps:
-      - name: Remove unnecessary files
+      - name: Install Dependencies
         run: |
-          sudo rm -rf /usr/share/dotnet
-          sudo rm -rf "$AGENT_TOOLSDIRECTORY"
-          
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends \
+            ca-certificates \
+            curl \
+            git \
+            lsb-release \
+            gnupg
+        
       - name: Checkout repository
         uses: actions/checkout@v4 # Action to checkout your code
 
