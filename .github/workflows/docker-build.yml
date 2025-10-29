@@ -18,15 +18,8 @@ jobs:
             dockerfile_path: ./Dockerfile_nvidia
 
     steps:
-      - name: Install Dependencies
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y --no-install-recommends iptables
-        
-      - name: Set up Docker
-        uses: docker/setup-docker-action@v4
-        with:
-          rootless: true
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
         
       - name: Checkout repository
         uses: actions/checkout@v4 # Action to checkout your code
