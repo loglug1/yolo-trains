@@ -22,11 +22,7 @@ jobs:
         run: |
           sudo apt-get update
           sudo apt-get install -y --no-install-recommends \
-            ca-certificates \
-            curl \
-            git \
-            lsb-release \
-            gnupg
+            docker
         
       - name: Checkout repository
         uses: actions/checkout@v4 # Action to checkout your code
