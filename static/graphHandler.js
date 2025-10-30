@@ -181,6 +181,12 @@ minthresholdInput.addEventListener('input', () => {
     updateDataPane(modelId,videoId,focusFrame,`${parseFloat(minthreshold).toFixed(1)}`,`${parseFloat(maxthreshold).toFixed(1)}`)
   }
 });
+minthresholdInput.addEventListener('input', () => {
+  minthreshold = parseFloat(minthresholdInput.value) || 0;
+  maxthreshold = parseFloat(maxthresholdInput.value) || 1;
+  populateDropdown(typeDropdown, frames, minthreshold, maxthreshold);
+});
+
 
 const maxthresholdInput = document.getElementById('maxthresholdinput');
 maxthresholdInput.addEventListener('input', () => {
@@ -189,6 +195,12 @@ maxthresholdInput.addEventListener('input', () => {
     updateDataPane(modelId,videoId,focusFrame,`${parseFloat(minthreshold).toFixed(1)}`,`${parseFloat(maxthreshold).toFixed(1)}`)
   }
 });
+maxthresholdInput.addEventListener('input', () => {
+  minthreshold = parseFloat(minthresholdInput.value) || 0;
+  maxthreshold = parseFloat(maxthresholdInput.value) || 1;
+  populateDropdown(typeDropdown, frames, minthreshold, maxthreshold);
+});
+
 
 const frameIntervalInput = document.getElementById('frameIntervalInput');
 frameIntervalInput.addEventListener('input', () => {
@@ -229,20 +241,35 @@ frameIntervalInput.addEventListener('input', () => {
 
   const typeDropdown = document.getElementById("objectTypeDropdown");
 
-  function populateDropdown(dropdown, frameList) {
-    dropdown.innerHTML = ""; // Clear old options
-    const typeSet = new Set();
-    frameList.forEach(frame => {
-      frame.objects.forEach(obj => typeSet.add(obj.object_type));
+function populateDropdown(dropdown, frameList, min = 0, max = 1) {
+  dropdown.innerHTML = ""; // Clear old options
+  const typeSet = new Set();
+
+  frameList.forEach(frame => {
+    frame.objects.forEach(obj => {
+      if (obj.confidence >= min && obj.confidence <= max) {
+        typeSet.add(obj.object_type);
+      }
     });
-    typeSet.forEach(type => {
-      const option = document.createElement("option");
-      option.value = type;
-      option.textContent = type;
-      dropdown.appendChild(option);
-    });
+  });
+
+  // Populate dropdown with filtered types
+  typeSet.forEach(type => {
+    const option = document.createElement("option");
+    option.value = type;
+    option.textContent = type;
+    dropdown.appendChild(option);
+  });
+
+  // Preserve selection if possible
+  if (typeSet.has(currentObjectType)) {
+    dropdown.value = currentObjectType;
+  } else if (dropdown.options.length > 0) {
+    currentObjectType = dropdown.options[0].value;
     dropdown.value = currentObjectType;
   }
+}
+
 
   typeDropdown.addEventListener("change", (e) => {
     currentObjectType = e.target.value;
