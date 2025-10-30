@@ -12,8 +12,8 @@ jobs:
     strategy:
       matrix:
         include:
-          #- tag_prefix: amd
-          #  dockerfile_path: ./Dockerfile_amd
+          - tag_prefix: amd
+            dockerfile_path: ./Dockerfile_amd
           - tag_prefix: nvidia
             dockerfile_path: ./Dockerfile_nvidia
 
