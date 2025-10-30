@@ -17,7 +17,13 @@ jobs:
           - tag_prefix: nvidia
             dockerfile_path: ./Dockerfile_nvidia
 
-    steps:        
+    steps:
+      - name: Create Space
+        run: |
+          sudo rm -rf /usr/share/dotnet
+          sudo rm -rf "$AGENT_TOOLSDIRECTORY"
+          sudo rm -rf /usr/share/swift
+          
       - name: Checkout repository
         uses: actions/checkout@v4 # Action to checkout your code
 
