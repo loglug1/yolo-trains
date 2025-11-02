@@ -20,9 +20,9 @@
 
       * `docker compose -f compose.yaml up` will start an instance of ROD that uses the CPU for prediction.
 
-      * `docker compose -f compose.yaml -f compose.amd.yaml up` will start an instance of ROD that uses AMD GPUs for prediction. You will need to edit compose.amd.yaml to match settings for your chipset.
+      * `docker compose -f compose.yaml -f compose.nvidia.yaml up` will start an instance of ROD that uses Nvidia Cuda for prediction. You will need to follow instructions [here](https://docs.nvidia.com/datacenter/cloud-native/container-toolkit/latest/install-guide.html) to enable Nvidia support in the Docker engine.
 
-      * Full Nvidia support inside Docker containers is a WIP.
+      * `docker compose -f compose.yaml -f compose.amd.yaml up` will start an instance of ROD that uses AMD GPUs for prediction. You will need to edit compose.amd.yaml to match settings for your chipset.
 
       * You can add `IMAGE=[CUSTOM DOCKER IMAGE]` to the beginning of either Docker Compose commands to pass in a custom built image from the previous section.
 
