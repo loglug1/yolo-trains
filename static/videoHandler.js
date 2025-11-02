@@ -66,6 +66,7 @@ async function uploadModel(){
 }
 
 document.getElementById("uploadBtn").addEventListener("click",uploadVideo);
+document.getElementById("uploadModelBtn").addEventListener("click",uploadModel);
 
 async function populateVideoDropdown() {
     let videoArray = await fetchVideos();

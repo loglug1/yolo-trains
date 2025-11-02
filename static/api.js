@@ -100,10 +100,11 @@ export async function fetchModels() {
 //frame_num: 0
 // image: "data:image/webp;base64,UklGRtSgAABXRUJQVlA4IMigAA
 // objects:
-export async function fetchFrameImg(modelId,videoId,frameNum){
+export async function fetchFrameImg(modelId,videoId,frameNum,min,max){
     try {
-        const response = await fetch(`/models/${modelId}/${videoId}/${frameNum}`);
-
+        console.log(`/models/${modelId}/${videoId}/${frameNum}/${min}/${max}`)
+        const response = await fetch(`/models/${modelId}/${videoId}/${frameNum}/${min}/${max}`);
+        
         if(!response.ok){
             throw new Error(`HTTP error! Status: ${response.status}`);
         }
