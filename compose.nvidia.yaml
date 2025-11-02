@@ -1,0 +1,15 @@
+services:
+  rod:
+    image: ${IMAGE:-loglug/rod:nvidia-latest}
+    environment:
+      # These two are specific to the chipset on the computer
+      HSA_OVERRIDE_GFX_VERSION: 10.3.0
+      PYTORCH_ROCM_ARCH: gfx1036
+      # This specifies what GPU devices are available to tensorflow
+      HIP_VISIBLE_DEVICES: 0
+      # This tells ROD what GPU to use
+      ROD_GPU_DEVICE: 0
+      ROCM_PATH: /opt/rocm
+    devices:
+      - /dev/dri
+      - /dev/kfd

@@ -398,8 +398,8 @@ def process_frame_helper(model: Model, video: Videos, frame: Frame, object_detec
     for object in objects:
         #converted_objects.append({'type': object['name'], 'confidence': object['confidence'], 'x1': object['box']['x1'], 'y1': object['box']['y1'], 'x2': object['box']['x2'], 'y2': object['box']['y2']})
         converted_objects.append(Object(object['name'], object['confidence'], object['box']['x1'], object['box']['y1'], object['box']['x2'], object['box']['y2'], object['class']))
-        insert_object_type(conn, cursor, model.model_uuid, object['class'], object['name'])
-        res = insert_object(conn, cursor, object['class'], frame.frame_uuid, model.model_uuid, object['confidence'], object['box']['x1'], object['box']['y1'], object['box']['x2'], object['box']['y2'])
+        insert_object_type(conn, cursor, model.model_uuid, object['class'], object['name'], commit = False)
+        res = insert_object(conn, cursor, object['class'], frame.frame_uuid, model.model_uuid, object['confidence'], object['box']['x1'], object['box']['y1'], object['box']['x2'], object['box']['y2'], commit = False)
         if res.status != 'success':
             print("Error inserting Object: ", res.message)
             continue
