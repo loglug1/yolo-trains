@@ -1,15 +1,16 @@
+# Need to have nvidia graphics drivers installed
+# Need to follow setup here: https://docs.nvidia.com/datacenter/cloud-native/container-toolkit/latest/install-guide.html
 services:
   rod:
     image: ${IMAGE:-loglug/rod:nvidia-latest}
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: all
+              capabilities: [gpu]
     environment:
-      # These two are specific to the chipset on the computer
-      HSA_OVERRIDE_GFX_VERSION: 10.3.0
-      PYTORCH_ROCM_ARCH: gfx1036
-      # This specifies what GPU devices are available to tensorflow
-      HIP_VISIBLE_DEVICES: 0
-      # This tells ROD what GPU to use
+      NVIDIA_VISIBLE_DEVICES: all
+      NVIDIA_DRIVER_CAPABILITIES: all
       ROD_GPU_DEVICE: 0
-      ROCM_PATH: /opt/rocm
-    devices:
-      - /dev/dri
-      - /dev/kfd
