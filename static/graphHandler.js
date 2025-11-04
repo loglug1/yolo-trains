@@ -7,8 +7,13 @@ var liveObjectTypes = new Set(); // To track unique object types in live mode
 var currentObjectType = null;    // Currently selected object type
 var socket = null;               // Socket connection
 var tempScatterChart = null;
+var minthreshold;
+var maxthreshold;
+var videoId;
+var modelId;
+var focusFrame
 
-export let frameClicked;
+// export let frameClicked;
 
 async function getFrames(videoId, modelId) {
   if (!videoId || !modelId) throw new Error("Both videoId and modelId are required.");
@@ -146,8 +151,8 @@ function setupLiveSocket(connectionId) {
 }
 
 function updateGraph(frameList, objectType) {
-  const minthreshold = parseFloat(document.getElementById('minthresholdinput').value) || 0;
-  const maxthreshold = parseFloat(document.getElementById('maxthresholdinput').value) || 0;
+  minthreshold = parseFloat(document.getElementById('minthresholdinput').value) || 0;
+  maxthreshold = parseFloat(document.getElementById('maxthresholdinput').value) || 0;
 
   const frameInterval = parseInt(document.getElementById('frameIntervalInput').value) || 1;
   const filteredData = [];
@@ -171,15 +176,31 @@ function updateGraph(frameList, objectType) {
 // Attach listener for live threshold updates
 const minthresholdInput = document.getElementById('minthresholdinput');
 minthresholdInput.addEventListener('input', () => {
-  // Make sure frameList and objectType are accessible here (you may have them as globals or from current context)
   updateGraph(frames, currentObjectType);
+  if(videoId && modelId && focusFrame ){
+    updateDataPane(modelId,videoId,focusFrame,`${parseFloat(minthreshold).toFixed(1)}`,`${parseFloat(maxthreshold).toFixed(1)}`)
+  }
 });
+minthresholdInput.addEventListener('input', () => {
+  minthreshold = parseFloat(minthresholdInput.value) || 0;
+  maxthreshold = parseFloat(maxthresholdInput.value) || 1;
+  populateDropdown(typeDropdown, frames, minthreshold, maxthreshold);
+});
+
 
 const maxthresholdInput = document.getElementById('maxthresholdinput');
 maxthresholdInput.addEventListener('input', () => {
-  // Make sure frameList and objectType are accessible here (you may have them as globals or from current context)
   updateGraph(frames, currentObjectType);
+    if(videoId && modelId && focusFrame ){
+    updateDataPane(modelId,videoId,focusFrame,`${parseFloat(minthreshold).toFixed(1)}`,`${parseFloat(maxthreshold).toFixed(1)}`)
+  }
 });
+maxthresholdInput.addEventListener('input', () => {
+  minthreshold = parseFloat(minthresholdInput.value) || 0;
+  maxthreshold = parseFloat(maxthresholdInput.value) || 1;
+  populateDropdown(typeDropdown, frames, minthreshold, maxthreshold);
+});
+
 
 const frameIntervalInput = document.getElementById('frameIntervalInput');
 frameIntervalInput.addEventListener('input', () => {
@@ -189,8 +210,8 @@ frameIntervalInput.addEventListener('input', () => {
 
   // Fetch and plot frames
   async function addDataPoints() {
-    const videoId = document.getElementById("videoDropdown").value;
-    const modelId = document.getElementById("modelDropdown").value;
+    videoId = document.getElementById("videoDropdown").value;
+    modelId = document.getElementById("modelDropdown").value;
 
     if (!videoId || !modelId) {
       alert("Please select both a video and a model.");
@@ -220,20 +241,35 @@ frameIntervalInput.addEventListener('input', () => {
 
   const typeDropdown = document.getElementById("objectTypeDropdown");
 
-  function populateDropdown(dropdown, frameList) {
-    dropdown.innerHTML = ""; // Clear old options
-    const typeSet = new Set();
-    frameList.forEach(frame => {
-      frame.objects.forEach(obj => typeSet.add(obj.object_type));
+function populateDropdown(dropdown, frameList, min = 0, max = 1) {
+  dropdown.innerHTML = ""; // Clear old options
+  const typeSet = new Set();
+
+  frameList.forEach(frame => {
+    frame.objects.forEach(obj => {
+      if (obj.confidence >= min && obj.confidence <= max) {
+        typeSet.add(obj.object_type);
+      }
     });
-    typeSet.forEach(type => {
-      const option = document.createElement("option");
-      option.value = type;
-      option.textContent = type;
-      dropdown.appendChild(option);
-    });
+  });
+
+  // Populate dropdown with filtered types
+  typeSet.forEach(type => {
+    const option = document.createElement("option");
+    option.value = type;
+    option.textContent = type;
+    dropdown.appendChild(option);
+  });
+
+  // Preserve selection if possible
+  if (typeSet.has(currentObjectType)) {
+    dropdown.value = currentObjectType;
+  } else if (dropdown.options.length > 0) {
+    currentObjectType = dropdown.options[0].value;
     dropdown.value = currentObjectType;
   }
+}
+
 
   typeDropdown.addEventListener("change", (e) => {
     currentObjectType = e.target.value;
@@ -244,12 +280,11 @@ frameIntervalInput.addEventListener('input', () => {
 
   //=====Gets frame from point clicked========================
   function findFrameFromPoint(frameNum) {
-    const videoId = document.getElementById("videoDropdown").value;
-    const modelId = document.getElementById("modelDropdown").value;
-    const frame = frames.find(f => f.frame_num === frameNum);
-    console.log("Frame clicked:", frame);
-    frameClicked = frame;
-    updateDataPane(modelId,videoId,frame)
+    videoId = document.getElementById("videoDropdown").value;
+    modelId = document.getElementById("modelDropdown").value;
+    focusFrame = frames.find(f => f.frame_num === frameNum);
+    console.log("Frame clicked:", focusFrame);
+    updateDataPane(modelId,videoId,focusFrame,`${parseFloat(minthreshold).toFixed(1)}`,`${parseFloat(maxthreshold).toFixed(1)}`)
   }
 
 document.addEventListener("DOMContentLoaded", () => {

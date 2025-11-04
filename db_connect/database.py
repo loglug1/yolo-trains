@@ -158,7 +158,7 @@ def insert_processed_frames(conn, cursor, frame_data) -> Response :
     return Response("error", f"Insert processed frames failed: {str(e)}")
 
 def insert_object(conn, cursor, class_id: int, frame_uuid: str, model_uuid: str, 
-                    confidence: float, x1: float, y1: float, x2: float, y2: float) -> Response :
+                    confidence: float, x1: float, y1: float, x2: float, y2: float, commit: bool = True) -> Response :
   try :
     cursor.execute("""INSERT INTO objects (type_id, frame_uuid, model_uuid, confidence, x1, y1, x2, y2) VALUES (
                     (SELECT id 
@@ -167,16 +167,16 @@ def insert_object(conn, cursor, class_id: int, frame_uuid: str, model_uuid: str,
                     LIMIT 1),
                     ?, ?, ?, ?, ?, ?, ?)""", 
                     (model_uuid, class_id, frame_uuid, model_uuid, confidence, x1, y1, x2, y2))
-    conn.commit()
+    if commit: conn.commit()
     return Response("success", f"Object in frame {frame_uuid} inserted successfully.") 
   
   except Exception as e :
     return Response("error", f"Insert object failed: {str(e)}")
 
-def insert_object_type(conn, cursor, model_uuid: str, class_id: int, name: str) -> Response :
+def insert_object_type(conn, cursor, model_uuid: str, class_id: int, name: str, commit: bool = True) -> Response :
   try :
     cursor.execute("""INSERT INTO object_types (model_uuid, class_id, name) VALUES (?, ?, ?)""", (model_uuid, class_id, name))
-    conn.commit()
+    if commit: conn.commit()
     return Response("success", f"Object type {name} inserted successfully.")
   
   except Exception as e :
