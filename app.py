@@ -4,7 +4,7 @@ import cv2
 import os
 from flask_socketio import SocketIO, send, emit, join_room, leave_room
 from ai_modules.abc_model import ObjectDetectionModel
-from ai_modules.yolo11s import Yolo11s
+from ai_modules.yolo11s import Yolo11s as CustomObjectDetectionModel
 from utilities.base64_transcoder import Base64_Transcoder
 from utilities.helper_functions import db_connect, get_sha256, get_num_frames, get_basename, get_frame_from_file, validate_extension, create_folder_when_missing, get_annotated_frame, get_hex_from_word, get_framerate_from_file
 from db_connect.database import Videos, Frame, Object, Model, ProcessedFrame, get_object_type_list_by_model_by_video, get_unprocessed_frame_list, get_processed_frame_list_with_objects, get_video_list as db_get_video_list, get_model_list as db_get_model_list, insert_frame, insert_video, create_tables, insert_model, get_video, get_frame_list, get_frame_list_with_objects, get_model, insert_object, insert_object_type, get_processed_frame as db_get_processed_frame, insert_processed_frame, get_frame, get_processed_frame_with_objects, insert_frames, get_processed_frame_history_with_objects
@@ -105,7 +105,7 @@ def upload_model():
             model_path = os.path.join(MODEL_LOCATION, secure_filename(name + '.' + file_extension))
             file.save(model_path)
             try:
-                Yolo11s(model_path)
+                CustomObjectDetectionModel(model_path)
             except:
                 os.remove(model_path)
                 return "Error loading model file!", 400
@@ -372,7 +372,7 @@ def _process_all_frames(model_id: str, video: Videos, frames: list[Frame], task_
         return
     model = res.model
     # Load object detection model with model file
-    object_detection_model = Yolo11s(res.model.model_url)
+    object_detection_model = CustomObjectDetectionModel(res.model.model_url)
     for frame in frames:
         processed_frame = process_frame_helper(model, video, frame, object_detection_model)
         socketio.emit('processed_frame', json.dumps(processed_frame), to=task_id)
@@ -382,7 +382,7 @@ def _process_all_frames(model_id: str, video: Videos, frames: list[Frame], task_
     conn.close()
 
 def process_single_frame(model: Model, video: Videos, frame: Frame, min_conf: float = 0, max_conf: float = 1):
-    object_detection_model = Yolo11s(model.model_url)
+    object_detection_model = CustomObjectDetectionModel(model.model_url)
     processed_frame = process_frame_helper(model, video, frame, object_detection_model, min_conf, max_conf)
     return processed_frame
 
@@ -459,7 +459,7 @@ def test_socket(data):
 frame_count = 0
 @socketio.event
 def predict_objects(base64_frame):
-    object_detection_model = Yolo11s()
+    object_detection_model = CustomObjectDetectionModel()
     # Convert frame to numpy array
     nparr_frame = Base64_Transcoder.data_url_to_nparray(base64_frame)
     # Run predictions on numpy array frame
