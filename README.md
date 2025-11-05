@@ -47,3 +47,35 @@
   
   ROD has a REST API that can be used with third party apps. See `api_reference.txt` for a list of available endpoints. (WIP)
 
+## Web Interface:
+
+  * Video Input:
+    1. "Video File Input" button - Select a .mp4 file for upload.
+    2. "Upload" button - Uploads the selected video file to the server. The uploaded file will then be added to the "Select a video" dropdown below.
+  
+  * Model Input:
+    1. "Model File Input" button - Select a .pt file for upload.
+    2. "Upload" button - Uploads the selected model file to the server. The uploaded file will then be added to the "Select a model" dropdown below.
+
+  * Generate Graph:
+    1. Select an uploaded video from the "Select a video" dropdown.
+    2. Select an uploaded model from the "Select a model" dropdown.
+    3. Press "Generate Graph" to display data from the selected video-model combination on the graph.
+
+  * Show Live Images Checkbox:
+    If checked, and the video-model combination has not yet been fully processed, it will display processed frames as they are received.
+  
+  * Reset Zoom Button:
+    Resets the zoom of the graph.
+
+  * Min and Max:
+    Updates the plotted points on the graph to be within the confidence interval based on the entered values.
+
+  * Frames Interval: 
+    Updates the plotted points to display only every X frames instead of all frames, where X is the entered value.
+
+  * Object Dropdown:
+    Plots points on the graph only if they contain the selected object. Points are plotted based on the confidence of the selected item in the frame.
+
+  * Plotted Points:
+    Represent individual frames and can be clicked to display an annotated image of that frame on the screen. The confidence values of each object detected in the selected frame will also be displayed in the data pane.
