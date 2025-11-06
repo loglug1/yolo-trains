@@ -9,7 +9,7 @@
   *Note: Image has only been tested on Linux devices but possibly could work on WSL.*
 
   1. Clone Repository
-  2. From the root of the repository, run `docker build --file Dockerfile_[amd|nvidia] --tag [Tag you would like to use]`
+  2. From the root of the repository, run `docker build --file Dockerfile_[amd|nvidia] --tag [Tag you would like to use] .`
       * __NOTE:__ replace portions of command in \[ \] depending on your build.
 
 ## Running Image:
