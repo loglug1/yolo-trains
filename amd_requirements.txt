@@ -2,3 +2,4 @@ Flask==3.1.2
 Flask-SocketIO==5.5.1
 influxdb-client==1.49.0
 ultralytics==8.3.218
+pytest==7.4.0
