@@ -4,6 +4,7 @@ on:
   push:
     branches:
       - main # Trigger on pushes to the main branch
+      - testing-workflow
 
 jobs:
   build:
