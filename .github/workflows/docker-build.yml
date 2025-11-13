@@ -47,7 +47,7 @@ jobs:
       - name: Run Tests
         run: |
           echo "Running tests..."
-          docker exec app_test pytest tests/ -v --disable-warnings --junitxml=/app/report.xml
+          pytest tests/ -v --disable-warnings --junitxml=report.xml
 
       - name: Add Test Results
         uses: dorny/test-reporter@v2
@@ -55,7 +55,7 @@ jobs:
         with:
           name: Test Results
           path: report.xml
-          format: junit
+          reporter: junit
 
       - name: Stop App
         run: |
