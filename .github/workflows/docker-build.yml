@@ -47,7 +47,13 @@ jobs:
       - name: Run Tests
         run: |
           echo "Running tests..."
-          docker exec pytest tests/ -v --disable-warnings
+          docker exec app_test pytest tests/ -v --disable-warnings --junitxml=/app/report.xml
+
+      - name: Upload test results
+        uses: mikeal/upload-test-report@v1
+        with:
+          path: report.xml
+          format: junit
 
       - name: Stop App
         run: |
